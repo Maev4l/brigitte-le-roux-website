@@ -1,0 +1,39 @@
+---
+import LanguagePicker from './LanguagePicker.astro';
+import frStrings from '../../../content/i18n/fr.json';
+import enStrings from '../../../content/i18n/en.json';
+
+const { locale = 'fr' } = Astro.props;
+const strings = locale === 'en' ? enStrings : frStrings;
+const baseUrl = import.meta.env.BASE_URL; // always ends with '/' (Astro guarantees this)
+const localePrefix = locale === 'en' ? 'en/' : '';
+const currentPath = Astro.url.pathname.replace(/\/$/, ''); // normalize trailing slash
+const items = [
+  ['recherches', strings.nav.recherches],
+  ['these',      strings.nav.these],
+  ['livres',     strings.nav.livres],
+  ['publications', strings.nav.publications],
+  ['logiciels',  strings.nav.logiciels],
+  ['cv',         strings.nav.cv],
+  ['ateliers',   strings.nav.ateliers]
+];
+
+// A nav item is active when the current path matches its slug exactly OR sits
+// underneath it (so /atlas/livres/cigda highlights the "Livres" tab).
+function isActive(slug) {
+  const itemPath = `${baseUrl}${localePrefix}${slug}`.replace(/\/$/, '');
+  return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+}
+---
+
+<header class="site">
+  <a href={`${baseUrl}${localePrefix}`} class="name">{strings.site.title}</a>
+  <nav>
+    {items.map(([slug, label]) => (
+      <a href={`${baseUrl}${localePrefix}${slug}`} class:list={[{ active: isActive(slug) }]}>
+        {label}
+      </a>
+    ))}
+  </nav>
+  <LanguagePicker locale={locale} />
+</header>

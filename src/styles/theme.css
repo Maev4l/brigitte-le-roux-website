@@ -1,0 +1,222 @@
+/* Le Monde theme — French editorial authority
+   Fraunces (variable optical-size serif) + Bricolage Grotesque (UI grotesque)
+   Parchment background, top masthead rule, vermillion kicker, dramatic display
+*/
+
+:root {
+  --bg: #f3ede1;
+  --text: #1a1612;
+  --text-muted: #4a4138;
+  --border: #c8bfad;
+  --accent: #b22222;       /* vermillion — kicker, active nav underline */
+  --max-width: 820px;
+  --line-height: 1.6;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: 'Bricolage Grotesque', ui-sans-serif, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: var(--line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 50px 28px 96px;
+}
+
+/* Header — standard flex header without a redundant border-bottom,
+   since the masthead rule on body::before handles the visual separator */
+header.site {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 44px 28px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Masthead rule — thin 1px black line near the very top of the page,
+   positioned via body::before to span the full page width */
+body::before {
+  content: '';
+  display: block;
+  height: 1px;
+  background: var(--text);
+  margin: 36px 28px 0;
+}
+
+/* Site name — Fraunces at maximum optical size for dramatic editorial presence */
+header.site .name {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 144;
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: -.02em;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--text);
+}
+
+/* Nav in Bricolage Grotesque — small tracked uppercase, Le Monde navigation style */
+header.site nav {
+  display: flex;
+  gap: 22px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text);
+  flex-wrap: wrap;
+}
+header.site nav a {
+  color: inherit;
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+/* Active link gets vermillion underline — matches .lm-nav .a in mockup */
+header.site nav a.active,
+header.site nav a:hover {
+  border-bottom-color: var(--accent);
+}
+
+footer.site {
+  border-top: 1px solid var(--border);
+  padding: 20px 28px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Short editorial rule before page content — 56×2px bar, from mockup .lm-rule */
+article::before {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 2px;
+  background: var(--text);
+  margin-bottom: 20px;
+}
+
+/* Kicker line above H1 — tracked vermillion uppercase Bricolage Grotesque */
+.lm-kicker {
+  font-family: var(--font-ui);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 16px;
+}
+
+/* H1 — Fraunces opsz 144, 56px, weight 300, very tight leading — the money shot */
+h1 {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 144;
+  font-size: 56px;
+  font-weight: 300;
+  letter-spacing: -.025em;
+  line-height: 0.9;
+  margin: 0 0 20px;
+}
+
+/* H2 — Fraunces italic at smaller opsz, still distinguished */
+h2 {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 36;
+  font-style: italic;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+  margin: 36px 0 10px;
+}
+
+/* H3 — Bricolage Grotesque uppercase, small kicker-style heading */
+h3 {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 24px 0 6px;
+}
+
+p { margin: 0 0 14px; }
+
+a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+a:hover { color: var(--accent); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+/* Language picker — matches nav style */
+.lang-picker {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.lang-picker a { color: inherit; text-decoration: none; }
+.lang-picker a:hover { color: var(--text); }
+
+/* Publication lists */
+.book-list,
+.publication-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.book-list li,
+.publication-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.55;
+}
+/* Year in accent color, Bricolage uppercase — editorial byline style */
+.pub-year {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-right: 10px;
+}
+.pub-authors { color: var(--text-muted); margin-right: 6px; font-size: 14px; }
+.pub-title { font-weight: 500; }
+.pub-venue { font-style: italic; color: var(--text-muted); font-size: 14px; }
+
+/* Responsive — collapse nav on small screens */
+@media (max-width: 720px) {
+  header.site {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 40px 20px 16px;
+  }
+  header.site nav { gap: 14px; }
+  body::before { margin: 32px 20px 0; }
+  h1 { font-size: 38px; line-height: 0.95; }
+}

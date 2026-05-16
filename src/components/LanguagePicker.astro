@@ -1,0 +1,22 @@
+---
+import frStrings from '../../../content/i18n/fr.json';
+import enStrings from '../../../content/i18n/en.json';
+
+const { locale = 'fr' } = Astro.props;
+const otherLabel = locale === 'fr' ? frStrings.footer.switchLang : enStrings.footer.switchLang;
+const baseUrl = import.meta.env.BASE_URL; // always ends with '/'
+const path = Astro.url.pathname;
+// Strip the base prefix so we operate on logical paths (e.g. "en/livres" or "")
+const stripped = path.startsWith(baseUrl) ? path.slice(baseUrl.length) : path.replace(/^\//, '');
+let otherStripped;
+if (locale === 'fr') {
+  otherStripped = stripped === '' ? 'en/' : `en/${stripped}`;
+} else {
+  otherStripped = stripped.replace(/^en\/?/, '');
+}
+const otherPath = `${baseUrl}${otherStripped}`;
+---
+
+<span class="lang-picker">
+  <a href={otherPath}>{otherLabel}</a>
+</span>

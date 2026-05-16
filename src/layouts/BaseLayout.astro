@@ -1,0 +1,26 @@
+---
+import '../styles/theme.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const { title, locale = 'fr' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang={locale}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} — Brigitte Le Roux</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <Header locale={locale} />
+  <main class="container">
+    <slot />
+  </main>
+  <Footer locale={locale} />
+</body>
+</html>
