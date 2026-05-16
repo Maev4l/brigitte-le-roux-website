@@ -1,0 +1,55 @@
+---
+import { getEntry, render } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import booksData from '../../content/data/books.json';
+import publicationsData from '../../content/data/publications.json';
+
+export async function getStaticPaths() {
+  const all = import.meta.glob('../../content/pages/**/fr.md', { eager: true });
+  return Object.keys(all).map(path => {
+    const slug = path
+      .replace('../../content/pages/', '')
+      .replace('/fr.md', '');
+    return { params: { slug: slug === 'home' ? undefined : slug } };
+  });
+}
+
+const { slug } = Astro.params;
+const lookup = (slug ?? 'home') + '/fr';
+const entry = await getEntry('pages', lookup);
+if (!entry) throw new Error(`Page not found: ${lookup}`);
+const { Content } = await render(entry);
+// read the optional listing field to decide which data list to render below the body
+const listing = entry.data.listing;
+---
+
+<PageLayout title={entry.data.title} locale="fr">
+  <Content />
+  {listing === 'books' && (
+    <ul class="book-list">
+      {booksData.map(b => (
+        <li>
+          {b.page_slug
+            ? <a href={`${import.meta.env.BASE_URL}${b.page_slug}`}><strong>{b.title_fr}</strong></a>
+            : <strong>{b.title_fr}</strong>}
+          — {b.authors.join(', ')}, <em>{b.publisher}</em>, {b.year}
+          {b.external && <> · <a href={b.external}>éditeur</a></>}
+        </li>
+      ))}
+    </ul>
+  )}
+  {listing === 'publications' && (
+    <ul class="publication-list">
+      {publicationsData.map(p => (
+        <li>
+          <span class="pub-year">{p.year ?? '—'}</span>
+          <span class="pub-authors">{p.authors.join(', ')}</span>
+          <span class="pub-title">{p.title_fr}</span>
+          {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
+          {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
+          {p.external && <> · <a href={p.external}>lien</a></>}
+        </li>
+      ))}
+    </ul>
+  )}
+</PageLayout>
