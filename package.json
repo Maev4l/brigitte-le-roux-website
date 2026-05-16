@@ -7,7 +7,9 @@
     "dev":         "astro dev --port 4321",
     "build":       "astro build",
     "preview":     "astro preview --port 4321",
+    "pull":        "bash scripts/pull-public.sh",
     "deploy":      "bash scripts/deploy.sh",
+    "check:links": "bash scripts/check-links.sh",
     "infra:plan":  "terraform -chdir=infrastructure plan",
     "infra:apply": "terraform -chdir=infrastructure apply -auto-approve"
   },
