@@ -1,0 +1,110 @@
+[
+  {
+    "id": "cigda",
+    "title_fr": "Combinatorial Inference in Geometric Data Analysis",
+    "title_en": "Combinatorial Inference in Geometric Data Analysis",
+    "authors": ["Le Roux, B.", "Bienaise, S.", "Durand, J.-L."],
+    "year": 2019,
+    "publisher": "Chapman & Hall/CRC",
+    "isbn": "9781498781619",
+    "cover": null,
+    "page_slug": "livres/cigda",
+    "external": "https://www.crcpress.com/Combinatorial-Inference-in-Geometric-Data-Analysis/Roux-Bienaise-Durand/p/book/9781498781619"
+  },
+  {
+    "id": "bourdieu-gda",
+    "title_fr": "La méthodologie de Pierre Bourdieu en action: espace culturel, espace social et analyse des données",
+    "title_en": "La méthodologie de Pierre Bourdieu en action: espace culturel, espace social et analyse des données",
+    "authors": ["Lebaron, F.", "Le Roux, B."],
+    "year": 2015,
+    "publisher": "Dunod",
+    "isbn": null,
+    "cover": null,
+    "page_slug": null,
+    "external": null
+  },
+  {
+    "id": "agdm",
+    "title_fr": "Analyse géométrique des données multidimensionnelles",
+    "title_en": "Analyse géométrique des données multidimensionnelles",
+    "authors": ["Le Roux, B."],
+    "year": 2014,
+    "publisher": "Dunod",
+    "isbn": null,
+    "cover": null,
+    "page_slug": null,
+    "external": null
+  },
+  {
+    "id": "mca",
+    "title_fr": "Multiple Correspondence Analysis",
+    "title_en": "Multiple Correspondence Analysis",
+    "authors": ["Le Roux, B.", "Rouanet, H."],
+    "year": 2010,
+    "publisher": "SAGE",
+    "isbn": null,
+    "cover": null,
+    "page_slug": "livres/mca",
+    "external": "http://www.sagepub.com/booksProdDesc.nav?prodId=Book233035&series=Series486&"
+  },
+  {
+    "id": "gda",
+    "title_fr": "Geometric Data Analysis: From Correspondence Analysis to Structured Data Analysis",
+    "title_en": "Geometric Data Analysis: From Correspondence Analysis to Structured Data Analysis",
+    "authors": ["Le Roux, B.", "Rouanet, H."],
+    "year": 2004,
+    "publisher": "Kluwer Academic Publishers",
+    "isbn": "1-4020-2236-0",
+    "cover": null,
+    "page_slug": null,
+    "external": "http://www.wkap.nl/prod/b/1-4020-2236-0"
+  },
+  {
+    "id": "ssh-exercices",
+    "title_fr": "Statistique en Sciences Humaines : Exercices & Solutions",
+    "title_en": "Statistique en Sciences Humaines : Exercices & Solutions",
+    "authors": ["Rouanet, H.", "Le Roux, B."],
+    "year": 1995,
+    "publisher": "Dunod",
+    "isbn": null,
+    "cover": null,
+    "page_slug": null,
+    "external": null
+  },
+  {
+    "id": "adm",
+    "title_fr": "Analyse des données multidimensionnelles",
+    "title_en": "Analyse des données multidimensionnelles",
+    "authors": ["Rouanet, H.", "Le Roux, B."],
+    "year": 1993,
+    "publisher": "Dunod",
+    "isbn": null,
+    "cover": null,
+    "page_slug": null,
+    "external": null
+  },
+  {
+    "id": "aid",
+    "title_fr": "Analyse inductive des données : Statistique en Sciences Humaines",
+    "title_en": "Analyse inductive des données : Statistique en Sciences Humaines",
+    "authors": ["Rouanet, H.", "Bernard, J.-M.", "Le Roux, B."],
+    "year": 1990,
+    "publisher": "Dunod",
+    "isbn": null,
+    "cover": null,
+    "page_slug": null,
+    "external": null
+  },
+  {
+    "id": "pn",
+    "title_fr": "Procédures Naturelles : Statistique en Sciences Humaines",
+    "title_en": "Procédures Naturelles : Statistique en Sciences Humaines",
+    "authors": ["Rouanet, H.", "Le Roux, B.", "Bert, M.-C."],
+    "year": 1987,
+    "publisher": "Dunod",
+    "isbn": null,
+    "cover": null,
+    "page_slug": null,
+    "external": null
+  }
+]

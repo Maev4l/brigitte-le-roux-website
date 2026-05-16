@@ -1,0 +1,21 @@
+{
+  "site": {
+    "title": "Brigitte Le Roux",
+    "tagline": "Analyse géométrique des données"
+  },
+  "nav": {
+    "home": "Accueil",
+    "recherches": "Recherches",
+    "these": "Thèse & HDR",
+    "livres": "Livres",
+    "publications": "Publications",
+    "logiciels": "Logiciels & données",
+    "cv": "CV",
+    "ateliers": "Ateliers",
+    "bureau": "Bureau"
+  },
+  "footer": {
+    "affiliation": "MAP5, Université Paris Cité — CEVIPOF/CNRS",
+    "switchLang": "English"
+  }
+}

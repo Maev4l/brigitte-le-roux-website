@@ -1,0 +1,42 @@
+[
+  {
+    "id": "hjellbrekke",
+    "book_id": "gda",
+    "reviewer": "Hjellbrekke, J.",
+    "venue": "European Sociological Review",
+    "year": 2005,
+    "url": "/shared/pdfs/livres/Reviews/Kl_Hjellbrekke.pdf"
+  },
+  {
+    "id": "bru",
+    "book_id": "gda",
+    "reviewer": "Bru, B.",
+    "venue": "Mathématiques & Sciences Humaines",
+    "year": 2005,
+    "url": "/shared/pdfs/livres/Reviews/Kl_Bru.pdf"
+  },
+  {
+    "id": "selz",
+    "book_id": "gda",
+    "reviewer": "Selz, M.",
+    "venue": "Bulletin de Méthodologie Sociologique",
+    "year": 2006,
+    "url": "/shared/pdfs/livres/Reviews/Kl_MSelz.html"
+  },
+  {
+    "id": "fionn",
+    "book_id": "gda",
+    "reviewer": "Murtagh, F.",
+    "venue": "Journal of Classification",
+    "year": 2008,
+    "url": "/shared/pdfs/livres/Reviews/Kl_Fionn.pdf"
+  },
+  {
+    "id": "csda",
+    "book_id": "gda",
+    "reviewer": "le Roux, N. J.",
+    "venue": "Computational Statistics & Data Analysis",
+    "year": 2009,
+    "url": "/shared/pdfs/livres/Reviews/Kl_CSDA.pdf"
+  }
+]
