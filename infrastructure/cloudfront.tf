@@ -1,3 +1,11 @@
+# Pre-existing ACM certificate for brigitte-le-roux.com (us-east-1, CloudFront requirement).
+data "aws_acm_certificate" "site_us_east_1" {
+  provider    = aws.us_east_1
+  domain      = var.domain_name
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
+
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${var.bucket_name}-oac"
   origin_access_control_origin_type = "s3"
