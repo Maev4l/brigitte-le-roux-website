@@ -1,7 +1,7 @@
 ---
 import LanguagePicker from './LanguagePicker.astro';
-import frStrings from '../../../content/i18n/fr.json';
-import enStrings from '../../../content/i18n/en.json';
+import frStrings from '../../content/i18n/fr.json';
+import enStrings from '../../content/i18n/en.json';
 
 const { locale = 'fr' } = Astro.props;
 const strings = locale === 'en' ? enStrings : frStrings;
