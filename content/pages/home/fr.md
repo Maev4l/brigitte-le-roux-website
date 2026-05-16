@@ -5,7 +5,7 @@ slug: "home"
 description: "Page d'accueil de Brigitte Le Roux, chercheuse spécialiste de l'analyse géométrique des données."
 ---
 
-![Brigitte Le Roux](/shared/img/photoweb.jpg)
+![Brigitte Le Roux](/img/photoweb.jpg)
 
 ## Affiliations
 

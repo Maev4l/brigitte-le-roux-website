@@ -5,7 +5,7 @@ slug: "home"
 description: "Homepage of Brigitte Le Roux, researcher specialising in Geometric Data Analysis."
 ---
 
-![Brigitte Le Roux](/shared/img/photoweb.jpg)
+![Brigitte Le Roux](/img/photoweb.jpg)
 
 ## Affiliations
 

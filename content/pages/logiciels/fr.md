@@ -11,37 +11,37 @@ description: "Jeux de données, scripts R, logiciels et textes de référence po
 
 Jeu de données utilisé au chapitre 5 du livre [Geometric Data Analysis](/livres) (2004).
 
-[Excel FR](/shared/data/Logiciels/Data/Culture_fr.xls) · [Excel EN](/shared/data/Logiciels/Data/Culture_en.xls) · [Projet SPAD](/shared/data/Logiciels/SPAD%20projects/Culture_2004.spad) — le projet SPAD effectue le codage des données et l'analyse des correspondances multiples.
+[Excel FR](/data/Logiciels/Data/Culture_fr.xls) · [Excel EN](/data/Logiciels/Data/Culture_en.xls) · [Projet SPAD](/data/Logiciels/SPAD%20projects/Culture_2004.spad) — le projet SPAD effectue le codage des données et l'analyse des correspondances multiples.
 
 ### French Worker Survey
 
-Jeu de données utilisé dans le texte [Interpreting Axes in MCA](/shared/pdfs/publications/Int_Axes.pdf) (1998).
+Jeu de données utilisé dans le texte [Interpreting Axes in MCA](/pdfs/publications/Int_Axes.pdf) (1998).
 
-[Excel](/shared/data/Logiciels/Data/Workers.xls) · [Projet SPAD](/shared/data/Logiciels/SPAD%20projects/FrenchWorkers_2019.spad)
+[Excel](/data/Logiciels/Data/Workers.xls) · [Projet SPAD](/data/Logiciels/SPAD%20projects/FrenchWorkers_2019.spad)
 
 ### Loisirs
 
 Jeu de données utilisé dans le livre [Analyse géométrique des données multidimensionnelles](/livres) (2014).
 
-[Excel FR](/shared/data/Logiciels/Data/Loisirs.xls) · [Excel EN](/shared/data/Logiciels/Data/Leisure.xls) · [Description des données](/shared/pdfs/Logiciels/Data/Leisure_data.pdf)
+[Excel FR](/data/Logiciels/Data/Loisirs.xls) · [Excel EN](/data/Logiciels/Data/Leisure.xls) · [Description des données](/pdfs/Logiciels/Data/Leisure_data.pdf)
 
 ### Parkinson
 
 Jeu de données utilisé dans les livres [Combinatorial Inference in GDA](/livres/cigda) (2019), [Analyse géométrique des données multidimensionnelles](/livres) (2014) et [Geometric Data Analysis](/livres) (2004), ainsi que dans l'article *Combinatorial Typicality Test in GDA* (2017).
 
-[Excel](/shared/data/Logiciels/Data/Parkinson.xls)
+[Excel](/data/Logiciels/Data/Parkinson.xls)
 
 ### Political Space
 
-Données sur l'espace politique des électeurs français à la fin des années 1990, utilisées dans l'article [L'espace politique des électeurs français à la fin des années 1990](/shared/pdfs/publications/rfsp_2000.pdf) (2000) et dans [Geometric Data Analysis](/livres) (chapitre 9, 2004).
+Données sur l'espace politique des électeurs français à la fin des années 1990, utilisées dans l'article [L'espace politique des électeurs français à la fin des années 1990](/pdfs/publications/rfsp_2000.pdf) (2000) et dans [Geometric Data Analysis](/livres) (chapitre 9, 2004).
 
-[Excel](/shared/data/Logiciels/Data/Political_Space97.xls) · [Fichier SPSS](/shared/data/Logiciels/Data/Political_Space97.sav)
+[Excel](/data/Logiciels/Data/Political_Space97.xls) · [Fichier SPSS](/data/Logiciels/Data/Political_Space97.sav)
 
 ### Taste Example
 
 Jeu de données utilisé dans la monographie [Multiple Correspondence Analysis](/livres/mca) (2010).
 
-[Excel](/shared/data/Logiciels/Data/Taste_Example.xls) · [Projet SPAD archivé](/shared/data/Logiciels/SPAD%20projects/TasteExample.spad)
+[Excel](/data/Logiciels/Data/Taste_Example.xls) · [Projet SPAD archivé](/data/Logiciels/SPAD%20projects/TasteExample.spad)
 
 ---
 
@@ -55,11 +55,11 @@ Le logiciel [SPAD](http://www.coheris.com/produits/analytics/logiciel-data-minin
 
 ## Textes de référence
 
-- [Factor-Analysis of Correspondences](/shared/pdfs/publications/Cordier65.pdf) — B. Escofier-Cordier (1965 International Conference in Computational Linguistics)
-- [Statistical Analysis as a Tool to Make Patterns Emerge from Data](/shared/pdfs/publications/HONOLULU.pdf) — J-P. Benzécri (in *Methodology of Pattern Recognition*, Academic Press, 1969)
-- [Interpreting Axes in Multiple Correspondence Analysis](/shared/pdfs/publications/Int_Axes.pdf) : Method of the Contributions of Points and Deviations (chapitre 16 in *Vizualisation of Categorical Data*, Academic Press, 1998)
-- [Qu'est-ce que l'analyse des données](/shared/pdfs/publications/Carme2003_BNZ.pdf) — transparents de J-P. Benzécri présentés à la conférence CARME 2003 (Barcelone) par B. Le Roux
-- [What is MCA?](/shared/pdfs/publications/What-Is-MCA.pdf) — transparents de l'exposé présenté à la conférence "Research Methods festival" à Oxford (2006)
+- [Factor-Analysis of Correspondences](/pdfs/publications/Cordier65.pdf) — B. Escofier-Cordier (1965 International Conference in Computational Linguistics)
+- [Statistical Analysis as a Tool to Make Patterns Emerge from Data](/pdfs/publications/HONOLULU.pdf) — J-P. Benzécri (in *Methodology of Pattern Recognition*, Academic Press, 1969)
+- [Interpreting Axes in Multiple Correspondence Analysis](/pdfs/publications/Int_Axes.pdf) : Method of the Contributions of Points and Deviations (chapitre 16 in *Vizualisation of Categorical Data*, Academic Press, 1998)
+- [Qu'est-ce que l'analyse des données](/pdfs/publications/Carme2003_BNZ.pdf) — transparents de J-P. Benzécri présentés à la conférence CARME 2003 (Barcelone) par B. Le Roux
+- [What is MCA?](/pdfs/publications/What-Is-MCA.pdf) — transparents de l'exposé présenté à la conférence "Research Methods festival" à Oxford (2006)
 
 ---
 

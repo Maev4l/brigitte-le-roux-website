@@ -117,7 +117,7 @@
     "authors": ["Le Roux, B.", "Rouanet, H.", "Savage, M.", "Warde, A."],
     "venue": "Sociology",
     "type": "article",
-    "pdf": "/shared/pdfs/publications/1050.pdf",
+    "pdf": "/pdfs/publications/1050.pdf",
     "external": null
   },
   {
@@ -139,7 +139,7 @@
     "authors": ["Hjellbrekke, J.", "Le Roux, B.", "Korsnes, O.", "Lebaron, F.", "Rosenlund, L.", "Rouanet, H."],
     "venue": "European Societies",
     "type": "article",
-    "pdf": "/shared/pdfs/publications/Norwegian_field_power.pdf",
+    "pdf": "/pdfs/publications/Norwegian_field_power.pdf",
     "external": null
   },
   {
@@ -183,7 +183,7 @@
     "authors": ["Rouanet, H.", "Lebaron, F.", "Le Hay, V.", "Ackermann, W.", "Le Roux, B."],
     "venue": "Mathématiques et Sciences Humaines",
     "type": "article",
-    "pdf": "/shared/pdfs/publications/regbis1.pdf",
+    "pdf": "/pdfs/publications/regbis1.pdf",
     "external": null
   },
   {
@@ -194,7 +194,7 @@
     "authors": ["Chiche, J.", "Le Roux, B.", "Perrineau, P.", "Rouanet, H."],
     "venue": "Revue française de science politique",
     "type": "article",
-    "pdf": "/shared/pdfs/publications/rfsp_2000.pdf",
+    "pdf": "/pdfs/publications/rfsp_2000.pdf",
     "external": "https://www.persee.fr/doc/rfsp_0035-2950_2000_num_50_3_395484"
   },
   {
@@ -447,7 +447,7 @@
     "authors": ["Le Roux, B."],
     "venue": "CARME 2015 (Naples)",
     "type": "slides",
-    "pdf": "/shared/pdfs/publications/Slides_CARME2015.pdf",
+    "pdf": "/pdfs/publications/Slides_CARME2015.pdf",
     "external": "http://www.carme-n.org/carme2015/"
   }
 ]

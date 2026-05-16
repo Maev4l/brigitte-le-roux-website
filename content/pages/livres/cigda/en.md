@@ -71,38 +71,38 @@ The simplified R scripts below compute observed significance levels (p-values) a
 
 Typicality tests consist in comparing the observations of a group with the ones of a reference population of which the group may or may not be a subset. Two test statistics are studied: (1) the Mahalanobis distance between points with respect to the covariance structure of the reference cloud; (2) the variance of the cloud.
 
-- *Multidimensional case* (Euclidean clouds, see pp. 55–59) — reference data ("Target" example): [`Target_reference.txt`](/shared/data/livres/CIGDA/Data/Target_reference.txt) ; group data: [`Target_group.txt`](/shared/data/livres/CIGDA/Data/Target_group.txt) ; R script: [`Combinatorial_Typicality.R`](/shared/data/livres/CIGDA/R_scripts/Combinatorial_Typicality.R).
+- *Multidimensional case* (Euclidean clouds, see pp. 55–59) — reference data ("Target" example): [`Target_reference.txt`](/data/livres/CIGDA/Data/Target_reference.txt) ; group data: [`Target_group.txt`](/data/livres/CIGDA/Data/Target_group.txt) ; R script: [`Combinatorial_Typicality.R`](/data/livres/CIGDA/R_scripts/Combinatorial_Typicality.R).
 - *One-dimensional case* (numerical variable) — the previous R script applied to a one-dimensional cloud performs the test with the squared calibrated deviation between means as the test statistic; it does not provide the directional test based on the deviation between means.
 
 **Chapter 4 — Geometric Typicality Test**
 
 The geometric typicality test consists in comparing the mean point of a Euclidean cloud to a reference point by taking the squared Mahalanobis distance between points as a test statistic. This test can be applied to a design with two repeated measures, the basic dataset being the individual differences.
 
-- *Multidimensional case* (Euclidean clouds) — "Target" example data: [`Target.txt`](/shared/data/livres/CIGDA/Data/Target.txt) ; R script (pp. 97–101): [`Geometric_Typicality.R`](/shared/data/livres/CIGDA/R_scripts/Geometric_Typicality.R).
+- *Multidimensional case* (Euclidean clouds) — "Target" example data: [`Target.txt`](/data/livres/CIGDA/Data/Target.txt) ; R script (pp. 97–101): [`Geometric_Typicality.R`](/data/livres/CIGDA/R_scripts/Geometric_Typicality.R).
 - *One-dimensional case* (numerical variable) — the previous R script applied to a one-dimensional cloud provides the results corresponding to a test with the calibrated deviation between the group mean and the reference mean as test statistic.
-- *Design with two repeated measures* — Student's example: [`Student.txt`](/shared/data/livres/CIGDA/Data/Student.txt).
+- *Design with two repeated measures* — Student's example: [`Student.txt`](/data/livres/CIGDA/Data/Student.txt).
 
 **Chapter 5 — Homogeneity Tests**
 
 The homogeneity tests presented in this chapter consist in comparing several subclouds by taking the M-variance between the mean points of subclouds as a test statistic — that is, the variance calculated from the Mahalanobis distance between points. The book studies the case of several *independent groups* and the case of *repeated measures*. In the case of several independent groups, several permutation schemes are studied depending on whether the comparison is *global*, *partial*, or *specific* (see pp. 109–110).
 
-- Data (p. 142): [`Target_4.txt`](/shared/data/livres/CIGDA/Data/Target_4.txt)
-- R script (pp. 142–147, partial or specific comparison of two independent groups): [`Homogeneity.R`](/shared/data/livres/CIGDA/R_scripts/Homogeneity.R)
+- Data (p. 142): [`Target_4.txt`](/data/livres/CIGDA/Data/Target_4.txt)
+- R script (pp. 142–147, partial or specific comparison of two independent groups): [`Homogeneity.R`](/data/livres/CIGDA/R_scripts/Homogeneity.R)
 
 ### Full and SPAD-Interfaced R Scripts
 
 The full R scripts implement the methods described in the book. Each ZIP archive contains three scripts ("main", "parameters", "core"), data files and a user's guide.
 
-- Combinatorial typicality tests (Chapter 3): [`CIGDA_combi.zip`](/shared/data/livres/CIGDA/R_scripts/CIGDA_combi.zip)
-- Combinatorial typicality tests — SPAD-interfaced script: [`CIGDA_Comb-v1.1.R`](/shared/data/livres/CIGDA/R_scripts/CIGDA_Comb-v1.1.R)
-- Geometric typicality test (Chapter 4) — SPAD-interfaced script: [`CIGDA_Geo-v1.R`](/shared/data/livres/CIGDA/R_scripts/CIGDA_Geo-v1.R)
-- Homogeneity permutation tests (Chapter 5) — SPAD-interfaced script: [`CIGDA_Homog-v1.R`](/shared/data/livres/CIGDA/R_scripts/CIGDA_Homog-v1.R)
+- Combinatorial typicality tests (Chapter 3): [`CIGDA_combi.zip`](/data/livres/CIGDA/R_scripts/CIGDA_combi.zip)
+- Combinatorial typicality tests — SPAD-interfaced script: [`CIGDA_Comb-v1.1.R`](/data/livres/CIGDA/R_scripts/CIGDA_Comb-v1.1.R)
+- Geometric typicality test (Chapter 4) — SPAD-interfaced script: [`CIGDA_Geo-v1.R`](/data/livres/CIGDA/R_scripts/CIGDA_Geo-v1.R)
+- Homogeneity permutation tests (Chapter 5) — SPAD-interfaced script: [`CIGDA_Homog-v1.R`](/data/livres/CIGDA/R_scripts/CIGDA_Homog-v1.R)
 
 ### Research Case Studies (Chapter 6)
 
 For each case study, data are provided in Excel format together with a SPAD project that reproduces the analyses presented in Chapter 6.
 
-1. **The Parkinson Study** — data: [`Parkinson.xls`](/shared/data/Logiciels/Data/Parkinson.xls); SPAD project: [`The Parkinson Study`](/shared/data/livres/CIGDA/Spad_Projects/The%20Parkinson%20Study_2019_03_31.spad)
-2. **Members of French Parliament and Globalisation** — data: [`MPs&Globalisation.xls`](/shared/data/livres/CIGDA/Data/MPs%26Globalisation.xls); SPAD project: [`MPs-Globalisation`](/shared/data/livres/CIGDA/Spad_Projects/MPs-Globalisation_2019_03_31.spad)
+1. **The Parkinson Study** — data: [`Parkinson.xls`](/data/Logiciels/Data/Parkinson.xls); SPAD project: [`The Parkinson Study`](/data/livres/CIGDA/Spad_Projects/The%20Parkinson%20Study_2019_03_31.spad)
+2. **Members of French Parliament and Globalisation** — data: [`MPs&Globalisation.xls`](/data/livres/CIGDA/Data/MPs%26Globalisation.xls); SPAD project: [`MPs-Globalisation`](/data/livres/CIGDA/Spad_Projects/MPs-Globalisation_2019_03_31.spad)
 3. **The European Central Bankers Study** — data and SPAD project available on request from Frédéric Lebaron.
-4. **Cognitive Tests and Education** — data: [`CognitiveTests.xls`](/shared/data/livres/CIGDA/Data/CognitiveTests.xls); SPAD project: [`Cognitive Study`](/shared/data/livres/CIGDA/Spad_Projects/Cognitive%20Study_2019_01_01.spad)
+4. **Cognitive Tests and Education** — data: [`CognitiveTests.xls`](/data/livres/CIGDA/Data/CognitiveTests.xls); SPAD project: [`Cognitive Study`](/data/livres/CIGDA/Spad_Projects/Cognitive%20Study_2019_01_01.spad)
