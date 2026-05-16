@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+yarn-error.log
+yarn-debug.log
+
+# Build output
+dist/
+.astro/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Brainstorming session caches (specs/plans tracked under docs/ instead)
+.superpowers/
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Terraform — state and local workspace (lock file is committed for reproducibility)
+infrastructure/.terraform/
+infrastructure/terraform.tfstate
+infrastructure/terraform.tfstate.backup
+infrastructure/terraform.tfvars
