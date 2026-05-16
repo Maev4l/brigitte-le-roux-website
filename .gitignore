@@ -7,6 +7,12 @@ yarn-debug.log
 dist/
 .astro/
 
+# Site binaries — canonical store is S3 (populated locally by hand, uploaded by `yarn deploy`).
+# These files are NOT tracked in git: some exceed GitHub's 100 MB per-file hard limit, and the
+# build/deploy pipeline already treats S3 as the source of truth. See CLAUDE.md for the recovery
+# procedure if `public/` needs to be repopulated from S3.
+public/
+
 # OS
 .DS_Store
 Thumbs.db

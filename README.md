@@ -13,10 +13,10 @@ brigitte-leroux-website/
 │   ├── pages/<slug>/{fr,en}.md
 │   ├── data/{publications,books,reviews}.json
 │   └── i18n/{fr,en}.json
-├── public/                     # binaries served verbatim at URL root
-│   ├── pdfs/   (~30 MB)        # publication PDFs
-│   ├── data/   (~217 MB)       # downloadable datasets / scripts
-│   └── img/    (~52 KB)        # photos
+├── public/                     # binaries served verbatim at URL root (gitignored;
+│   ├── pdfs/                   #   canonical store is S3, see CLAUDE.md)
+│   ├── data/
+│   └── img/
 ├── infrastructure/             # Terraform (S3 + CloudFront + Route 53)
 ├── scripts/deploy.sh           # build + S3 sync + CloudFront invalidation
 ├── docs/superpowers/specs/     # design spec

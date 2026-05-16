@@ -95,14 +95,22 @@ preserved from the legacy site (e.g. `livres` ↔ `books`, `logiciels` ↔ `soft
 
 `public/` contains binaries served verbatim at URL root:
 
-| Folder | URL | Size | Tracked? |
-|---|---|---|---|
-| `public/pdfs/` | `/pdfs/foo.pdf` | ~30 MB | yes |
-| `public/data/` | `/data/bar.xls` | ~217 MB | yes |
-| `public/img/`  | `/img/photoweb.jpg` | ~52 KB | yes |
+| Folder | URL | Size |
+|---|---|---|
+| `public/pdfs/` | `/pdfs/foo.pdf` | ~30 MB |
+| `public/data/` | `/data/bar.xls` | ~217 MB |
+| `public/img/`  | `/img/photoweb.jpg` | ~52 KB |
 
-`public/` is the canonical copy of these binaries. ~247 MB tracked in git is
-acceptable for a seldom-cloned single-author repo; Git LFS not used.
+`public/` is **not tracked in git** — it is gitignored entirely. The canonical store
+is the production S3 bucket: `yarn deploy` builds with the local `public/` contents
+and syncs the result to S3. To rebuild the deployment from scratch on a fresh clone,
+`public/` must be repopulated locally (e.g. `aws s3 sync s3://brigitte-le-roux-website/
+./dist/` from a recent build, then carry forward) before running `yarn build`.
+
+Rationale: a single SPAD project file in `public/data/` exceeds 100 MB, which is
+GitHub's per-file hard limit. Rather than introducing Git LFS for a handful of large
+assets, the project treats S3 as the source of truth — consistent with how the deploy
+pipeline already operates.
 
 ### Build & dev
 
