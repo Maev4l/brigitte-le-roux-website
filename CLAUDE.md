@@ -65,9 +65,13 @@ When several contributors edit content from different machines:
 
 Always pull before editing. `yarn pull` uses `aws s3 sync`'s default mtime
 comparison, so it correctly downloads anything newer on S3 without overwriting
-unchanged local files. Conflict semantics: last-writer-wins on S3 (no
-versioning enabled by default — consider turning it on in `infrastructure/s3.tf`
-if accidental overwrites become a risk).
+unchanged local files.
+
+**Conflict semantics**: last-writer-wins on S3. **Object versioning is intentionally
+not enabled** — see the spec's "Deployment infrastructure" note. Enable
+`aws_s3_bucket_versioning` in `infrastructure/s3.tf` if accidental overwrites or
+multi-writer concurrency become a real problem; it gives free rollback at the
+cost of storing every superseded version.
 
 ## Build & deploy
 

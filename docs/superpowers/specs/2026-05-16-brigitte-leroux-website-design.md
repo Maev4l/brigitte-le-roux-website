@@ -149,6 +149,11 @@ Resources provisioned:
 - **S3 bucket** `brigitte-le-roux-website` (region `eu-central-1`, `force_destroy = true`).
   Public access blocked; bucket policy grants read only to the CloudFront distribution
   via the OAC `AWS:SourceArn` condition.
+  - **Object versioning is intentionally not enabled.** Last-writer-wins is acceptable
+    for the current single-author flow. Enable `aws_s3_bucket_versioning` in
+    `infrastructure/s3.tf` if multi-writer collaboration grows and accidental
+    overwrites become a concern — versioning gives free rollback of any
+    overwritten or deleted object at the cost of storing every superseded version.
 - **CloudFront distribution** — origin is the S3 bucket via Origin Access Control (OAC).
   Default root object `index.html`. Cache policy: **CachingOptimized**
   (`658327ea-f89d-4fab-a63d-7e88639e58f6`). Deploys invalidate `/*` so freshness is
