@@ -19,7 +19,7 @@ const items = [
 ];
 
 // A nav item is active when the current path matches its slug exactly OR sits
-// underneath it (so /atlas/livres/cigda highlights the "Livres" tab).
+// underneath it (so /livres/cigda highlights the "Livres" tab).
 function isActive(slug) {
   const itemPath = `${baseUrl}${localePrefix}${slug}`.replace(/\/$/, '');
   return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
