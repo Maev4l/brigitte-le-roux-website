@@ -21,3 +21,14 @@ resource "aws_route53_record" "site_aaaa" {
     evaluate_target_health = false
   }
 }
+
+# Google Search Console domain-property verification.
+# Once verified, this record can be deleted — but Google rechecks periodically,
+# so it is safer to leave it in place.
+resource "aws_route53_record" "google_site_verification" {
+  zone_id = var.hosted_zone_id
+  name    = var.domain_name
+  type    = "TXT"
+  ttl     = 300
+  records = ["google-site-verification=5q0Rk16zHDeHhP_0Igihm1cyi2IAU0wQMYkfkWmJ8nw"]
+}
