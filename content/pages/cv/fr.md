@@ -9,8 +9,6 @@ description: "Curriculum vitae de Brigitte Le Roux : formation, carrière univer
 Laboratoire MAP5 — Université Paris Descartes  
 45 Rue des Saints-Pères, 75006 Paris
 
-Date de naissance : 21 mai 1943. Mariée, 3 enfants.
-
 ---
 
 ## Diplômes et titres universitaires
