@@ -9,10 +9,11 @@ Astro build served from S3 + CloudFront at `https://brigitte-le-roux.com/`.
 ```
 brigitte-leroux-website/
 ├── src/                        # Astro project (components, layouts, pages, styles)
-├── content/                    # text source — pages, listings, i18n strings
-│   ├── pages/<slug>/{fr,en}.md
-│   ├── data/{publications,books,reviews}.json
-│   └── i18n/{fr,en}.json
+├── content/                    # text source — pages and i18n strings
+│   ├── pages/<slug>/{fr,en}.md # book / publication listings live INSIDE
+│   │                           # their respective page (livres, publications)
+│   │                           # as inline `books:` / `publications:` arrays
+│   └── i18n/{fr,en}.json       # key/value UI translations
 ├── public/                     # binaries served verbatim at URL root (gitignored;
 │   ├── pdfs/                   #   canonical store is S3, see CLAUDE.md)
 │   ├── data/
@@ -43,14 +44,24 @@ yarn preview                    # serve dist/ locally
    locale: fr                   # or en
    slug: new-slug
    description: "Optional meta description"
-   listing: books               # optional — 'books' or 'publications' renders a
-                                # JSON-driven listing below the markdown body
+   listing: books               # optional — 'books' or 'publications' renders the
+                                # corresponding content collection (year-desc)
+                                # below the markdown body
    ---
    ```
 
 2. If the page should appear in the header nav, add its slug and label to
    `content/i18n/fr.json` and `content/i18n/en.json`, then add the route to the
    `items` array in `src/components/Header.astro`.
+
+## Adding a book / publication
+
+Open the listing page (`content/pages/livres/{fr,en}.md` for books,
+`content/pages/publications/{fr,en}.md` for publications) and append a new
+entry to the inline `books:` or `publications:` array in the frontmatter.
+Both locale files need the entry. See the schema in `src/content/config.mjs`
+and the examples in CLAUDE.md. Listings are sorted by `year` descending at
+build time — no manual reordering needed.
 
 ## Deploy
 

@@ -13,17 +13,83 @@ CloudFront on `brigitte-le-roux.com`.
 
 ## Content model
 
-- **Pages**: `content/pages/<slug>/{fr,en}.md` with frontmatter
-  (`title`, `locale`, `slug`, optional `description`, optional `listing: books|publications`).
-- **Listings**: `content/data/{publications,books,reviews}.json` — imported by the
-  catch-all route components.
-- **i18n**: `content/i18n/{fr,en}.json` for nav labels, footer text, common UI strings.
+**Principle: one page = one file (per locale).** All editorial content for
+a page — including book and publication listings — lives in that page's
+markdown file. No separate `content/books/`, `content/publications/`, or
+`content/data/*.json` indirection. Adding or editing an entry means editing
+exactly one file in each locale.
+
+- **Pages** — `content/pages/<slug>/{fr,en}.md`. Frontmatter fields,
+  validated by Zod schema in `src/content/config.mjs`:
+  - Common: `title`, `locale`, `slug`, optional `description`, optional
+    `keywords`.
+  - Listing pages: optional `listing: books|publications` (discriminator),
+    plus an inline `books:` or `publications:` array carrying the entries
+    themselves.
+  - Home: `page_layout: home` selects `HomeLayout.astro`. Other home-only
+    fields: `kicker`, `deck_html`, `portrait`, `tiles`.
+- **i18n** — `content/i18n/{fr,en}.json` for nav labels, footer text and
+  common UI strings (key/value translation data — not editorial content,
+  hence JSON is appropriate here).
+
+Catch-all routes (`src/pages/[...slug].astro` and `src/pages/en/[...slug].astro`)
+read `entry.data.books` / `entry.data.publications` from the page entry,
+sort by `year` descending, and render the listing — so the most recent
+items always appear first regardless of YAML order.
+
+### Inline listing entries
+
+Each entry is a YAML mapping inside the page's `books:` or `publications:`
+array. Schemas in `src/content/config.mjs`. Shapes:
+
+```yaml
+# In content/pages/livres/{fr,en}.md — same data in both files since
+# book titles are language-identical on this site.
+books:
+  - slug: cigda
+    title: "Combinatorial Inference in Geometric Data Analysis"
+    authors: ["Le Roux, B.", "Bienaise, S.", "Durand, J.-L."]
+    year: 2019
+    publisher: "Chapman & Hall/CRC"
+    isbn: "9781498781619"
+    page_slug: "livres/cigda"     # optional — detail page under content/pages/
+    external: "https://..."        # optional — publisher / external link
+    reviews:                       # optional — nested when this book is reviewed
+      - reviewer: "Hjellbrekke, J."
+        venue: "European Sociological Review"
+        year: 2005
+        url: "/pdfs/livres/Reviews/Kl_Hjellbrekke.pdf"
+```
+
+```yaml
+# In content/pages/publications/{fr,en}.md — each locale's page carries its
+# own `title` for each entry (titles often genuinely differ FR/EN).
+publications:
+  - slug: lebaron-le-roux-2013-geometrie-champ
+    year: 2013
+    title: "Géométrie du champ"          # FR file. EN file has the English title.
+    authors: ["Lebaron, F.", "Le Roux, B."]
+    venue: "Actes de la recherche en sciences sociales"
+    type: "article"                       # article | book | chapter | slides
+    pdf: "/pdfs/publications/foo.pdf"     # optional
+    external: "https://..."               # optional
+```
 
 Adding a new route:
 
 1. Create the markdown pair in `content/pages/<new-slug>/`.
 2. Add the slug + label to `content/i18n/{fr,en}.json`.
 3. Add the route to the `items` array in `src/components/Header.astro`.
+
+Adding a new book / publication:
+
+1. Open `content/pages/livres/{fr,en}.md` (or `publications/{fr,en}.md`).
+2. Append a new entry to the `books:` (or `publications:`) array per the
+   schema above. Both locale files need the entry — for books the YAML is
+   identical in both; for publications the `title` field carries the
+   locale-specific title.
+3. Save. The listing reflects the change immediately on next build, sorted
+   by `year` descending.
 
 ## Static assets
 
@@ -127,7 +193,7 @@ pre-existing and looked up via data sources — Terraform does not manage them.
 ## Open follow-ups
 
 - `bureau` page is FR-only on the legacy source; currently omitted from EN nav.
-- Publications JSON schema may evolve once the listing UX is finalized.
+- Publications schema may evolve once the listing UX is finalized.
 - Translated FR/EN slug pairs to be verified against the legacy site nav.
 
 ## Reference

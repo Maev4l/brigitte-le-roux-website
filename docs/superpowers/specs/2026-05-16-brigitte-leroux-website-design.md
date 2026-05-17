@@ -47,9 +47,9 @@ brigitte-leroux-website/
 │   ├── pages/                  # [...slug].astro + en/[...slug].astro
 │   └── styles/theme.css        # Fraunces + vermillion + parchment
 ├── content/                    # text source (processed)
-│   ├── pages/<slug>/{fr,en}.md
-│   ├── data/{publications,books,reviews}.json
-│   └── i18n/{fr,en}.json
+│   ├── pages/<slug>/{fr,en}.md # listings live INSIDE the page (livres,
+│   │                           # publications) as inline frontmatter arrays
+│   └── i18n/{fr,en}.json       # key/value UI translations
 ├── public/                     # binaries served verbatim at URL root
 │   ├── pdfs/                   # ~30 MB — tracked
 │   ├── data/                   # ~217 MB — tracked
@@ -64,25 +64,71 @@ brigitte-leroux-website/
 └── README.md
 ```
 
-Note: `content/data/` (JSON listings, code-imported) and `public/data/` (XLS/SPAD/R/SAV
-downloads served at `/data/`) share a name but never collide — one is a filesystem
-import path, the other is a URL path.
-
 ### Content model
 
-- **Pages** — `content/pages/<slug>/{fr,en}.md` with frontmatter:
-  ```yaml
-  ---
-  title: "Page title"
-  locale: fr            # or en
-  slug: <slug>
-  description: "Optional meta description"
-  listing: books        # optional: 'books' or 'publications' renders a JSON-driven section
-  ---
-  ```
-- **Listings** — `content/data/{publications,books,reviews}.json`, imported by the
-  catch-all route components.
-- **i18n strings** — `content/i18n/{fr,en}.json` for nav labels, footer text, common UI.
+**Principle: one page = one file (per locale).** Every editorial concern
+for a page — including the listings of books and publications — lives in
+that page's markdown file under `content/pages/<slug>/{fr,en}.md`. There
+are no separate per-entry collection files and no JSON content sources;
+adding or editing an entry is exactly one edit per locale, in the page
+that displays it. The content schema is a single `pages` collection
+validated by Zod in `src/content/config.mjs`.
+
+Frontmatter fields on a `pages` entry:
+
+```yaml
+---
+title: "Page title"
+locale: fr                       # or en
+slug: <slug>
+description: "Optional meta description"
+keywords: "Optional, narrow, per-page keyword list"
+
+# Listing pages (e.g. /livres, /publications):
+listing: books                   # discriminator: 'books' or 'publications'
+books:                           # inline array carried by this page
+  - slug: cigda
+    title: "..."
+    authors: [...]
+    year: 2019
+    publisher: "..."
+    isbn: "..."                  # optional
+    cover: "..."                 # optional
+    page_slug: "livres/cigda"    # optional — link to a detail page
+    external: "..."              # optional
+    reviews:                     # optional — nested under the reviewed book
+      - reviewer: "..."
+        venue: "..."
+        year: 2005
+        url: "..."
+publications:                    # alternate inline array for publications pages
+  - slug: <kebab-case-id>
+    year: 2013
+    title: "..."                 # locale-specific (FR file has FR title, EN has EN)
+    authors: [...]
+    venue: "..."
+    type: article                # article | book | chapter | slides
+    pdf: "..."                   # optional
+    external: "..."              # optional
+
+# Home (when page_layout: home):
+page_layout: home
+kicker: "..."
+deck_html: "..."
+portrait: { src: "...", alt: "..." }
+tiles: { affiliations: {...}, methodes: {...}, nouveau: {...} }
+---
+```
+
+Both catch-all routes (`src/pages/[...slug].astro` and
+`src/pages/en/[...slug].astro`) read `entry.data.books` /
+`entry.data.publications` from the page entry and sort by `year`
+descending — the most recent items always appear first regardless of YAML
+order on disk.
+
+**i18n strings** — `content/i18n/{fr,en}.json`. JSON is retained here only
+because this file holds pure key/value translation data (nav labels,
+footer text, common UI strings), not editorial content.
 
 ### Routing
 
