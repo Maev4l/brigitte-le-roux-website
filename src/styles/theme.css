@@ -188,6 +188,40 @@ hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
 .lang-picker a { color: inherit; text-decoration: none; }
 .lang-picker a:hover { color: var(--text); }
 
+/* Tables rendered from markdown — ateliers itinerary, CV affiliations,
+   cigda/mca table of contents. Editorial styling: vermillion small-caps
+   thead echoing the kicker/section vocabulary, hairline row separators
+   matching the .book-list pattern, full-width with consistent padding. */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.55;
+}
+thead th {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: left;
+  padding: 10px 16px 10px 0;
+  border-bottom: 1px solid var(--text);
+}
+tbody td {
+  padding: 8px 16px 8px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: none; }
+/* Drop the trailing right-padding on the last column so the row's right edge
+   is flush against the column edge. */
+thead th:last-child,
+tbody td:last-child { padding-right: 0; }
+
 /* Publication lists */
 .book-list,
 .publication-list {
