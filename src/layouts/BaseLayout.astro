@@ -8,15 +8,20 @@ import enStrings from '../../content/i18n/en.json';
 const { title, locale = 'fr', description, keywords } = Astro.props;
 
 const strings = locale === 'en' ? enStrings : frStrings;
-const fullTitle = `${title} — Brigitte Le Roux`;
+const fullTitle = `${title} — ${strings.site.title}`;
 const metaDescription = description || strings.site.description;
 const metaKeywords = keywords || strings.site.keywords;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogLocale = locale === 'en' ? 'en_US' : 'fr_FR';
 const ogImage = new URL('/img/photoweb.jpg', Astro.site).href;
 
-// Derive the logical slug from the current pathname (strip base, locale prefix, trailing slash).
-// Mirrors the logic in src/components/LanguagePicker.astro so hreflang stays in sync.
+// Derive the logical slug (content-collection key) from the current pathname:
+// strip the deploy base, strip the locale prefix, drop the trailing slash. The
+// sentinel value `home` is used because the home page has no folder name in the
+// URL but its content lives under `content/pages/home/`. Duplicated in
+// src/components/LanguagePicker.astro by design — only two callers and the rules
+// are tightly bound to this site's URL layout, so a shared helper would add a
+// file without proportionate value. Keep the two copies in sync if changed.
 const baseUrl = import.meta.env.BASE_URL;
 const stripped = Astro.url.pathname.startsWith(baseUrl)
   ? Astro.url.pathname.slice(baseUrl.length)
@@ -42,7 +47,7 @@ const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).hre
   <title>{fullTitle}</title>
   <meta name="description" content={metaDescription} />
   <meta name="keywords" content={metaKeywords} />
-  <meta name="author" content="Brigitte Le Roux" />
+  <meta name="author" content={strings.site.title} />
   <link rel="canonical" href={canonical} />
 
   {frExists && <link rel="alternate" hreflang="fr" href={frUrl} />}
@@ -55,7 +60,7 @@ const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).hre
   <meta property="og:type" content="website" />
   <meta property="og:locale" content={ogLocale} />
   <meta property="og:image" content={ogImage} />
-  <meta property="og:site_name" content="Brigitte Le Roux" />
+  <meta property="og:site_name" content={strings.site.title} />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={fullTitle} />
