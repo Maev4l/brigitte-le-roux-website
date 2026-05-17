@@ -24,6 +24,10 @@ const bookItem = z.object({
   // when the book warrants one (e.g. "livres/cigda"). Omitted = listing only.
   page_slug: z.string().nullable().optional(),
   external: z.string().nullable().optional(),
+  // A single external "book review" link (one URL to a reviewing article on
+  // a third-party site). Used by CIGDA today. Distinct from `reviews:` which
+  // is a curated list of locally-archived PDF reviews — see GDA.
+  book_review_url: z.string().nullable().optional(),
   // Reviews of this book — currently only `gda` has any.
   reviews: z.array(reviewItem).optional()
 });
@@ -65,6 +69,26 @@ const pages = defineCollection({
     // One source of truth per locale: edit the page, the listing updates.
     books: z.array(bookItem).optional(),
     publications: z.array(publicationItem).optional(),
+    // Side sections rendered below the main books list on /livres,
+    // mirroring the legacy site's "Livres traduits" and "Chapitres dans
+    // des ouvrages collectifs" blocks. Each entry's text_html is the
+    // pre-rendered HTML for the bibliographic line — keeps the data model
+    // simple for free-prose academic citations that don't split cleanly
+    // into authors/title/venue fields.
+    translated_books_title: z.string().optional(),
+    translated_books: z.array(z.object({
+      year: z.number(),
+      text_html: z.string()
+    })).optional(),
+    book_chapters_title: z.string().optional(),
+    book_chapters: z.array(z.object({
+      slug: z.string(),
+      year: z.number(),
+      text_html: z.string()
+    })).optional(),
+    // Optional cross-reference link rendered at the bottom of the listing
+    // page (e.g. "Fichiers de données : <a ...>cliquer ici</a>").
+    data_sets_link_html: z.string().optional(),
     // Home-only structured fields. Present when `page_layout: home` is set
     // in frontmatter; HomeLayout.astro reads them. They are .optional() at
     // the schema level so other pages keep validating.

@@ -80,12 +80,6 @@ publications:
     venue: "Sociology"
     type: "article"
     pdf: "/pdfs/publications/1050.pdf"
-  - slug: "chiche-le-hay-le-roux-2008-espace-politique"
-    year: 2008
-    title: "L'espace politique français la veille de l'élection présidentielle (2007)"
-    authors: ["Chiche, J.","Le Hay, V.","Le Roux, B."]
-    venue: "Méthodes de sondages (Dunod)"
-    type: "chapter"
   - slug: "hjellbrekke-le-roux-korsnes-2007-norwegian-field-power"
     year: 2007
     title: "The Norwegian Field of Power Anno 2000"

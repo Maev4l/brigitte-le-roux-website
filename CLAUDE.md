@@ -54,8 +54,15 @@ books:
     isbn: "9781498781619"
     page_slug: "livres/cigda"     # optional — detail page under content/pages/
     external: "https://..."        # optional — publisher / external link
-    reviews:                       # optional — nested when this book is reviewed
-      - reviewer: "Hjellbrekke, J."
+    # Two review shapes are supported, mirroring the legacy site:
+    book_review_url: "https://..." # optional — ONE external review URL,
+                                   #   rendered as " · recension" / "book review"
+                                   #   inline after `external`. Used by CIGDA.
+    reviews:                       # optional — LIST of locally-archived reviews,
+                                   #   rendered as a nested <ul> under the entry
+                                   #   with a "Revues critiques" / "Book reviews"
+                                   #   label. Used by GDA.
+      - reviewer: "J. Hjellbrekke"
         venue: "European Sociological Review"
         year: 2005
         url: "/pdfs/livres/Reviews/Kl_Hjellbrekke.pdf"
@@ -73,6 +80,31 @@ publications:
     type: "article"                       # article | book | chapter | slides
     pdf: "/pdfs/publications/foo.pdf"     # optional
     external: "https://..."               # optional
+```
+
+The books listing page (`content/pages/livres/{fr,en}.md`) also accepts three
+optional sub-blocks rendered below the main `books:` list, mirroring the
+legacy site's "Livres traduits" / "Translated books", "Chapitres dans des
+ouvrages collectifs" / "Book chapters" sections, and the bottom-of-page
+"Fichiers de données" / "Data sets" cross-reference. Each block is optional;
+each `text_html` is free-prose HTML (because bibliographic citations don't
+split cleanly into author/title/venue fields). The route sorts entries by
+`year` descending before rendering.
+
+```yaml
+# In content/pages/livres/{fr,en}.md, after the books: array.
+translated_books_title: "Livres traduits"          # locale-specific section header
+translated_books:
+  - year: 1996
+    text_html: "<em>Title</em>. Publisher, Place."
+
+book_chapters_title: "Chapitres dans des ouvrages collectifs"
+book_chapters:
+  - slug: "<kebab-case-id>"
+    year: 2018
+    text_html: "Authors (year). Chapter title, chapter N of <em>Book</em>, …"
+
+data_sets_link_html: "Fichiers de données : <a href=\"/logiciels/\">cliquer ici</a>"
 ```
 
 Adding a new route:

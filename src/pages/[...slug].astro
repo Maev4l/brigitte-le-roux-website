@@ -41,24 +41,66 @@ const publicationsData = (entry.data.publications ?? []).slice().sort((a, b) => 
   <PageLayout title={entry.data.title} locale="fr" description={entry.data.description} keywords={entry.data.keywords}>
     <Content />
     {listing === 'books' && (
-      <ul class="book-list">
-        {booksData.map(b => (
-          <li>
-            {b.page_slug
-              ? <a href={`${import.meta.env.BASE_URL}${b.page_slug}`}><strong>{b.title}</strong></a>
-              : <strong>{b.title}</strong>}
-            — {b.authors.join(', ')}, <em>{b.publisher}</em>, {b.year}
-            {b.external && <> · <a href={b.external}>éditeur</a></>}
-          </li>
-        ))}
-      </ul>
+      <>
+        <ul class="book-list">
+          {booksData.map(b => (
+            <li>
+              {b.page_slug
+                ? <a href={`${import.meta.env.BASE_URL}${b.page_slug}`}><strong>{b.title}</strong></a>
+                : <strong>{b.title}</strong>}
+              — {b.authors.map((a, i) => (
+                <>{i > 0 && ', '}{a.startsWith('Le Roux') ? <strong>{a}</strong> : a}</>
+              ))}, <em>{b.publisher}</em>, {b.year}
+              {b.external && <> · <a href={b.external}>éditeur</a></>}
+              {b.book_review_url && <> · <a href={b.book_review_url}>recension</a></>}
+              {b.reviews && b.reviews.length > 0 && (
+                <>
+                  <div class="reviews-label">Revues critiques</div>
+                  <ul class="review-list">
+                    {b.reviews.map(r => (
+                      <li>
+                        <em><a href={r.url}>{r.venue}</a></em> par {r.reviewer} ({r.year})
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+        {entry.data.translated_books && entry.data.translated_books.length > 0 && (
+          <>
+            <h2 class="listing-section">{entry.data.translated_books_title}</h2>
+            <ul class="book-list">
+              {entry.data.translated_books.slice().sort((a, b) => b.year - a.year).map(t => (
+                <li set:html={t.text_html}></li>
+              ))}
+            </ul>
+          </>
+        )}
+        {entry.data.book_chapters && entry.data.book_chapters.length > 0 && (
+          <>
+            <h2 class="listing-section">{entry.data.book_chapters_title}</h2>
+            <ul class="book-list">
+              {entry.data.book_chapters.slice().sort((a, b) => b.year - a.year).map(c => (
+                <li set:html={c.text_html}></li>
+              ))}
+            </ul>
+          </>
+        )}
+        {entry.data.data_sets_link_html && (
+          <p class="data-sets-link" set:html={entry.data.data_sets_link_html}></p>
+        )}
+      </>
     )}
     {listing === 'publications' && (
       <ul class="publication-list">
         {publicationsData.map(p => (
           <li>
             <span class="pub-year">{p.year}</span>
-            <span class="pub-authors">{p.authors.join(', ')}</span>
+            <span class="pub-authors">{p.authors.map((a, i) => (
+              <>{i > 0 && ', '}{a.startsWith('Le Roux') ? <strong>{a}</strong> : a}</>
+            ))}</span>
             <span class="pub-title">{p.title}</span>
             {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
             {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
