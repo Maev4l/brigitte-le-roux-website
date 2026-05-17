@@ -1,7 +1,9 @@
 {
   "site": {
     "title": "Brigitte Le Roux",
-    "tagline": "Geometric Data Analysis"
+    "tagline": "Geometric Data Analysis",
+    "description": "Personal academic site of Brigitte Le Roux, researcher in Geometric Data Analysis (MAP5, Université Paris Cité; CEVIPOF/CNRS).",
+    "keywords": "Brigitte Le Roux, Geometric Data Analysis, Multiple Correspondence Analysis, MCA, GDA, applied statistics, MAP5, CEVIPOF, quantitative sociology, case studies"
   },
   "nav": {
     "home": "Home",

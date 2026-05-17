@@ -1,7 +1,9 @@
 {
   "site": {
     "title": "Brigitte Le Roux",
-    "tagline": "Analyse géométrique des données"
+    "tagline": "Analyse géométrique des données",
+    "description": "Site personnel de Brigitte Le Roux, chercheuse en analyse géométrique des données (MAP5, Université Paris Cité ; CEVIPOF/CNRS).",
+    "keywords": "Brigitte Le Roux, analyse géométrique des données, analyse des correspondances multiples, ACM, AGD, statistique appliquée, MAP5, CEVIPOF, sociologie quantitative"
   },
   "nav": {
     "home": "Accueil",
