@@ -15,6 +15,7 @@ const pages = defineCollection({
     locale: z.enum(['fr', 'en']),
     slug: z.string(),
     description: z.string().optional(),
+    keywords: z.string().optional(),
     // optional field to trigger data-driven listing below the markdown body
     listing: z.enum(['books', 'publications']).optional()
   })
