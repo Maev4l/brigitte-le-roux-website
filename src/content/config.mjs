@@ -41,8 +41,24 @@ const publicationItem = z.object({
   authors: z.array(z.string()),
   venue: z.string(),
   type: z.enum(['article', 'book', 'chapter', 'slides']),
+  // Volume / issue / page range info (e.g. "Vol. 29 (2-3), 331-348" or "42, 1049-1071").
+  // Free-form because the legacy bibliographic format varies; rendered after the
+  // venue if present.
+  pages: z.string().nullable().optional(),
   pdf: z.string().nullable().optional(),
-  external: z.string().nullable().optional()
+  external: z.string().nullable().optional(),
+  // Optional "see X" cross-reference to a books-page entry. Used for the
+  // type:book entries in §1 (legacy "voir MCA" / "voir LIVRES" pattern).
+  // slug is locale-neutral (the route prepends the EN/FR base prefix);
+  // label is the displayed text inside the link (e.g. "MCA", "LIVRES" /
+  // "Books"), per-locale because it varies.
+  see_book_slug: z.string().nullable().optional(),
+  see_book_label: z.string().nullable().optional()
+});
+
+const freeProseItem = z.object({
+  year: z.number(),
+  text_html: z.string()
 });
 
 const pages = defineCollection({
@@ -89,6 +105,19 @@ const pages = defineCollection({
     // Optional cross-reference link rendered at the bottom of the listing
     // page (e.g. "Fichiers de données : <a ...>cliquer ici</a>").
     data_sets_link_html: z.string().optional(),
+    // Top-of-listing cross-reference (e.g. on /publications, a link back to
+    // /livres). Rendered above the listing if present.
+    intro_link_html: z.string().optional(),
+    // Publications-page sub-sections mirroring the legacy site's §2 Rapports
+    // techniques and §3 Communications / Conferences (with Internationales /
+    // Nationales sub-divisions). Each entry is free-prose HTML, year-desc sort.
+    technical_reports_title: z.string().optional(),
+    technical_reports: z.array(freeProseItem).optional(),
+    communications_title: z.string().optional(),
+    communications_international_title: z.string().optional(),
+    communications_international: z.array(freeProseItem).optional(),
+    communications_national_title: z.string().optional(),
+    communications_national: z.array(freeProseItem).optional(),
     // Home-only structured fields. Present when `page_layout: home` is set
     // in frontmatter; HomeLayout.astro reads them. They are .optional() at
     // the schema level so other pages keep validating.

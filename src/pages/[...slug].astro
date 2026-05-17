@@ -33,6 +33,13 @@ const listing = entry.data.listing;
 // regardless of the order they appear in the YAML.
 const booksData = (entry.data.books ?? []).slice().sort((a, b) => b.year - a.year);
 const publicationsData = (entry.data.publications ?? []).slice().sort((a, b) => b.year - a.year);
+
+// Group publications by year for the year-marker rendering (legacy §1 pattern).
+const publicationsByYear = publicationsData.reduce((acc, p) => {
+  (acc[p.year] ||= []).push(p);
+  return acc;
+}, {});
+const publicationYearsDesc = Object.keys(publicationsByYear).sort((a, b) => Number(b) - Number(a));
 ---
 
 {isHome ? (
@@ -94,20 +101,70 @@ const publicationsData = (entry.data.publications ?? []).slice().sort((a, b) => 
       </>
     )}
     {listing === 'publications' && (
-      <ul class="publication-list">
-        {publicationsData.map(p => (
-          <li>
-            <span class="pub-year">{p.year}</span>
-            <span class="pub-authors">{p.authors.map((a, i) => (
-              <>{i > 0 && ', '}{a.startsWith('Le Roux') ? <strong>{a}</strong> : a}</>
-            ))}</span>
-            <span class="pub-title">{p.title}</span>
-            {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
-            {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
-            {p.external && <> · <a href={p.external}>lien</a></>}
-          </li>
+      <>
+        {entry.data.intro_link_html && (
+          <p class="pub-intro-link" set:html={entry.data.intro_link_html}></p>
+        )}
+        {publicationYearsDesc.map(year => (
+          <>
+            <h3 class="pub-year-group">{year}</h3>
+            <ul class="publication-list">
+              {publicationsByYear[year].map(p => (
+                <li>
+                  <span class="pub-authors">{p.authors.map((a, i) => (
+                    <>{i > 0 && ', '}{a.startsWith('Le Roux') ? <strong>{a}</strong> : a}</>
+                  ))}</span>
+                  <span class="pub-title">{p.title}</span>
+                  {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
+                  {p.pages && <span class="pub-pages">, {p.pages}</span>}
+                  {p.see_book_slug && p.see_book_label && (
+                    <> · <a href={`${import.meta.env.BASE_URL}${p.see_book_slug}`}>voir {p.see_book_label}</a></>
+                  )}
+                  {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
+                  {p.external && <> · <a href={p.external}>lien</a></>}
+                </li>
+              ))}
+            </ul>
+          </>
         ))}
-      </ul>
+        {entry.data.technical_reports && entry.data.technical_reports.length > 0 && (
+          <>
+            <h2 class="listing-section">{entry.data.technical_reports_title}</h2>
+            <ul class="publication-list">
+              {entry.data.technical_reports.slice().sort((a, b) => b.year - a.year).map(r => (
+                <li set:html={r.text_html}></li>
+              ))}
+            </ul>
+          </>
+        )}
+        {(entry.data.communications_international || entry.data.communications_national) && (
+          <>
+            {entry.data.communications_title && (
+              <h2 class="listing-section">{entry.data.communications_title}</h2>
+            )}
+            {entry.data.communications_international && entry.data.communications_international.length > 0 && (
+              <>
+                <h3 class="listing-subsection">{entry.data.communications_international_title}</h3>
+                <ul class="publication-list">
+                  {entry.data.communications_international.slice().sort((a, b) => b.year - a.year).map(c => (
+                    <li set:html={c.text_html}></li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {entry.data.communications_national && entry.data.communications_national.length > 0 && (
+              <>
+                <h3 class="listing-subsection">{entry.data.communications_national_title}</h3>
+                <ul class="publication-list">
+                  {entry.data.communications_national.slice().sort((a, b) => b.year - a.year).map(c => (
+                    <li set:html={c.text_html}></li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </>
+        )}
+      </>
     )}
   </PageLayout>
 )}

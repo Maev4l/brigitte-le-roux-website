@@ -284,6 +284,62 @@ hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
 .data-sets-link a { color: var(--text); }
 .data-sets-link a:hover { color: var(--accent); }
 
+/* Sub-section heading inside a listing-section block — used for the
+   Internationales / Nationales blocks on /publications. Asymmetric marker:
+   a short vermillion rule on the left (echoing the home page topkicker bar
+   and the listing-section vermillion vocabulary), italic Fraunces label
+   inline next to it. Quieter than the centered parent .listing-section. */
+.listing-subsection {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-variation-settings: 'opsz' 36;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  margin: 28px 0 10px;
+}
+.listing-subsection::before {
+  content: '';
+  display: inline-block;
+  width: 38px;
+  height: 2px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Year marker between groups of publications in §1 — bold Bricolage caps,
+   small but distinct. Vermillion to echo the existing .pub-year inline
+   accent (kept the same tone, just promoted to a group header). */
+.pub-year-group {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 22px 0 6px;
+}
+
+/* The pub-year inline label is no longer emitted per-entry on /publications
+   (year-grouping headers replaced it), but the .pub-year class is left in
+   theme.css for backward compatibility if a future page resurrects it. */
+
+/* Intro-link paragraph at the top of /publications (legacy "LIVRES (cliquer
+   ICI)" cross-reference). */
+.pub-intro-link {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 8px 0 24px;
+}
+.pub-intro-link a { color: var(--text); }
+.pub-intro-link a:hover { color: var(--accent); }
+
 /* Responsive — collapse nav on small screens */
 @media (max-width: 720px) {
   header.site {
