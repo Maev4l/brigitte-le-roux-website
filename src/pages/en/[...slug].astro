@@ -23,7 +23,7 @@ const { Content } = await render(entry);
 const listing = entry.data.listing;
 ---
 
-<PageLayout title={entry.data.title} locale="en">
+<PageLayout title={entry.data.title} locale="en" description={entry.data.description} keywords={entry.data.keywords}>
   <Content />
   {listing === 'books' && (
     <ul class="book-list">
