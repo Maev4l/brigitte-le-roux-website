@@ -33,6 +33,14 @@ body {
   padding: 50px 28px 96px;
 }
 
+/* Wider container for the home page Op-Ed Wrap layout. The home hero needs
+   ~1100px to fit the floated portrait beside the headline without cramping. */
+.oped {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 28px 88px;
+}
+
 /* Header — standard flex header without a redundant border-bottom,
    since the masthead rule on body::before handles the visual separator */
 header.site {
@@ -132,6 +140,7 @@ h1 {
   letter-spacing: -.025em;
   line-height: 0.9;
   margin: 0 0 20px;
+  text-wrap: balance;
 }
 
 /* H2 — Fraunces italic at smaller opsz, still distinguished */

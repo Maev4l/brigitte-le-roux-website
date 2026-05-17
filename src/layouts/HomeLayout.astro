@@ -1,0 +1,274 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+// `Content` is the Astro component returned by render(entry) — it renders
+// the markdown body of home/{fr,en}.md. Passing it as a prop instead of
+// re-deriving here keeps render() in the route (so it runs only once) and
+// matches the way other pages slot <Content /> into PageLayout.
+const { entry, Content, locale } = Astro.props;
+const data = entry.data;
+
+// Schema marks the home-only fields .optional() so the rest of the page
+// collection keeps validating; assert they're present here, with an error
+// that names the offending entry so a missing field doesn't surface as a
+// cryptic build trace.
+if (!data.tiles || !data.portrait) {
+  throw new Error(
+    `HomeLayout: entry "${entry.id}" is missing required home fields ` +
+    `(tiles, portrait)`
+  );
+}
+
+const t = data.tiles;
+---
+
+<BaseLayout
+  title={data.title}
+  locale={locale}
+  description={data.description}
+  mainClass="oped"
+>
+  <p class="topkicker"><span class="bar"></span>{data.kicker}</p>
+
+  <figure class="portrait">
+    <div class="mat"><img src={data.portrait.src} alt={data.portrait.alt} /></div>
+  </figure>
+
+  <h1>Brigitte <span class="it">Le Roux</span></h1>
+
+  <p class="deck" set:html={data.deck_html}></p>
+
+  <div class="bio">
+    <Content />
+  </div>
+
+  <div class="clear"></div>
+
+  <section class="tiles">
+    <div class="tile">
+      <h2 class="h">{t.affiliations.title}</h2>
+      <p set:html={t.affiliations.body_html}></p>
+      {t.affiliations.note && <p class="italic">{t.affiliations.note}</p>}
+    </div>
+    <div class="tile">
+      <h2 class="h">{t.methodes.title}</h2>
+      <ul class="methods">
+        {t.methodes.items.map(item => (
+          <li>{item.label}<span class="ab">{item.ab}</span></li>
+        ))}
+      </ul>
+    </div>
+    <div class="tile nouveau">
+      <h2 class="h">{t.nouveau.title}</h2>
+      <h3><a href={t.nouveau.book_href}>{t.nouveau.book_title}</a></h3>
+      <p class="italic">{t.nouveau.book_meta}</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .topkicker {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .34em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .topkicker .bar {
+    display: inline-block;
+    width: 38px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* Float right BEFORE the H1 in source order — top edge aligns with the
+     name's cap-line. Do not change source order; the alignment depends on it.
+     position: relative is the anchor for the two corner L-marks below. */
+  .portrait {
+    position: relative;
+    float: right;
+    width: 38%;
+    min-width: 280px;
+    margin: 0 0 24px 36px;
+  }
+  .portrait .mat {
+    background: #ece4d3;
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .portrait img {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: saturate(.9) contrast(1.02);
+  }
+  /* Vermillion corner L-marks at bottom-left and top-right of the portrait —
+     editorial crop-mark vocabulary. 14×14 px, 2 px stroke, sitting 6 px
+     outside the mat so they read as registration marks rather than as part
+     of the frame itself. */
+  .portrait::before,
+  .portrait::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+  }
+  .portrait::before {
+    bottom: -6px;
+    left: -6px;
+    border-left: 2px solid var(--accent);
+    border-bottom: 2px solid var(--accent);
+  }
+  .portrait::after {
+    top: -6px;
+    right: -6px;
+    border-right: 2px solid var(--accent);
+    border-top: 2px solid var(--accent);
+  }
+
+  /* Override the global h1 (theme.css) for this layout only — scoped rules
+     win on specificity because Astro appends [data-astro-cid-*]. */
+  h1 {
+    font-family: var(--font-display);
+    font-variation-settings: 'opsz' 144;
+    font-size: clamp(58px, 8vw, 108px);
+    font-weight: 300;
+    letter-spacing: -.035em;
+    line-height: .9;
+    margin: 0 0 28px;
+    text-wrap: balance;
+  }
+  h1 .it {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--text);
+  }
+
+  /* text-wrap: balance kills the "CNRS" widow by re-distributing words;
+     the deck_html string also carries &nbsp; bonds around each affiliation
+     and an explicit <br> between them as belt-and-suspenders. */
+  .deck {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: 'opsz' 36;
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    max-width: 38ch;
+    margin: 0 0 36px;
+    text-wrap: balance;
+  }
+
+  .bio p {
+    font-family: var(--font-display);
+    font-size: 17px;
+    line-height: 1.7;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .bio > p:first-of-type::first-letter {
+    font-family: var(--font-display);
+    font-variation-settings: 'opsz' 144;
+    font-weight: 400;
+    float: left;
+    font-size: 88px;
+    line-height: .82;
+    padding: 6px 12px 0 0;
+    color: var(--accent);
+    font-style: normal;
+  }
+  .bio p em { font-style: italic; }
+  /* No .bio a / .bio a:hover — the global a / a:hover rules in theme.css
+     already produce the same effect. */
+
+  .clear { clear: both; }
+
+  .tiles {
+    margin-top: 46px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 3px solid var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  .tile {
+    padding: 22px 22px 26px;
+    border-right: 1px solid var(--border);
+  }
+  .tile:last-child { border-right: none; }
+  /* Vermillion tile titles carry the colour the numerals used to. */
+  .tile .h {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  .tile p {
+    font-family: var(--font-display);
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0;
+    color: var(--text);
+  }
+  .tile p.italic {
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  /* No .tile a / .tile a:hover — the global a / a:hover rules in theme.css
+     cover any link that appears in tile body content. The .nouveau h3 a
+     rule below intentionally overrides them for the book-title link. */
+
+  .methods { list-style: none; padding: 0; margin: 0; }
+  .methods li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    border-bottom: 1px dotted var(--border);
+  }
+  .methods li:last-child { border-bottom: none; }
+  .methods .ab {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .2em;
+    color: var(--accent);
+  }
+
+  .nouveau h3 {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: 'opsz' 36;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.25;
+    margin: 0 0 6px;
+  }
+  .nouveau h3 a {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2px;
+  }
+  .nouveau h3 a:hover { border-bottom-color: var(--accent); }
+
+  @media (max-width: 780px) {
+    .portrait { float: none; width: auto; margin: 0 0 28px; max-width: 340px; }
+    .tiles { grid-template-columns: 1fr; }
+    .tile { border-right: none; border-bottom: 1px solid var(--border); }
+    .tile:last-child { border-bottom: none; }
+    .bio > p:first-of-type::first-letter { font-size: 64px; }
+  }
+</style>

@@ -1,6 +1,7 @@
 ---
 import { getEntry, render } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
+import HomeLayout from '../../layouts/HomeLayout.astro';
 import booksData from '../../../content/data/books.json';
 import publicationsData from '../../../content/data/publications.json';
 
@@ -18,38 +19,48 @@ const { slug } = Astro.params;
 const lookup = (slug ?? 'home') + '/en';
 const entry = await getEntry('pages', lookup);
 if (!entry) throw new Error(`Page not found: ${lookup}`);
+
+// Render the markdown body for every page — non-home pages slot <Content />
+// into PageLayout below; the home page hands it to HomeLayout, where it's
+// rendered inside the .bio div alongside the structured frontmatter data.
+// "page_layout" is used instead of "layout" because Astro treats "layout" as a
+// reserved frontmatter key that Vite resolves as a component import path.
+const isHome = entry.data.page_layout === 'home';
 const { Content } = await render(entry);
-// read the optional listing field to decide which data list to render below the body
 const listing = entry.data.listing;
 ---
 
-<PageLayout title={entry.data.title} locale="en" description={entry.data.description} keywords={entry.data.keywords}>
-  <Content />
-  {listing === 'books' && (
-    <ul class="book-list">
-      {booksData.map(b => (
-        <li>
-          {b.page_slug
-            ? <a href={`${import.meta.env.BASE_URL}en/${b.page_slug}`}><strong>{b.title_en}</strong></a>
-            : <strong>{b.title_en}</strong>}
-          — {b.authors.join(', ')}, <em>{b.publisher}</em>, {b.year}
-          {b.external && <> · <a href={b.external}>publisher</a></>}
-        </li>
-      ))}
-    </ul>
-  )}
-  {listing === 'publications' && (
-    <ul class="publication-list">
-      {publicationsData.map(p => (
-        <li>
-          <span class="pub-year">{p.year ?? '—'}</span>
-          <span class="pub-authors">{p.authors.join(', ')}</span>
-          <span class="pub-title">{p.title_en}</span>
-          {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
-          {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
-          {p.external && <> · <a href={p.external}>link</a></>}
-        </li>
-      ))}
-    </ul>
-  )}
-</PageLayout>
+{isHome ? (
+  <HomeLayout entry={entry} Content={Content} locale="en" />
+) : (
+  <PageLayout title={entry.data.title} locale="en" description={entry.data.description} keywords={entry.data.keywords}>
+    <Content />
+    {listing === 'books' && (
+      <ul class="book-list">
+        {booksData.map(b => (
+          <li>
+            {b.page_slug
+              ? <a href={`${import.meta.env.BASE_URL}en/${b.page_slug}`}><strong>{b.title_en}</strong></a>
+              : <strong>{b.title_en}</strong>}
+            — {b.authors.join(', ')}, <em>{b.publisher}</em>, {b.year}
+            {b.external && <> · <a href={b.external}>publisher</a></>}
+          </li>
+        ))}
+      </ul>
+    )}
+    {listing === 'publications' && (
+      <ul class="publication-list">
+        {publicationsData.map(p => (
+          <li>
+            <span class="pub-year">{p.year ?? '—'}</span>
+            <span class="pub-authors">{p.authors.join(', ')}</span>
+            <span class="pub-title">{p.title_en}</span>
+            {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
+            {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
+            {p.external && <> · <a href={p.external}>link</a></>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </PageLayout>
+)}

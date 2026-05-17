@@ -5,7 +5,7 @@ import Footer from '../components/Footer.astro';
 import frStrings from '../../content/i18n/fr.json';
 import enStrings from '../../content/i18n/en.json';
 
-const { title, locale = 'fr', description, keywords } = Astro.props;
+const { title, locale = 'fr', description, keywords, mainClass = 'container' } = Astro.props;
 
 const strings = locale === 'en' ? enStrings : frStrings;
 const fullTitle = `${title} — ${strings.site.title}`;
@@ -73,7 +73,7 @@ const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).hre
 </head>
 <body>
   <Header locale={locale} />
-  <main class="container">
+  <main class={mainClass}>
     <slot />
   </main>
   <Footer locale={locale} />
