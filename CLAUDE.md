@@ -73,6 +73,35 @@ not enabled** — see the spec's "Deployment infrastructure" note. Enable
 multi-writer concurrency become a real problem; it gives free rollback at the
 cost of storing every superseded version.
 
+## SEO
+
+Every page renders a full meta-tag stack from `src/layouts/BaseLayout.astro`:
+description, keywords, author, canonical URL, `hreflang` alternates (FR↔EN
+where both versions exist), Open Graph tags, and Twitter card tags. A
+generated `robots.txt` (from `src/pages/robots.txt.js`) and a sitemap
+(`sitemap-index.xml` + chunks, via `@astrojs/sitemap`) are emitted at build
+time and uploaded to S3 by `yarn deploy`.
+
+**Page-level overrides (optional, in markdown frontmatter):**
+
+```yaml
+---
+title: "Page title"
+locale: fr
+slug: ...
+description: "Specific meta description for this page."
+keywords: "narrow, page-specific, keyword, list"
+---
+```
+
+If `description` or `keywords` is omitted, the locale-wide defaults from
+`content/i18n/{fr,en}.json` (`site.description`, `site.keywords`) are used.
+Override only when a page benefits from a narrower / more specific snippet —
+most pages can rely on the defaults.
+
+`hreflang` alternates are auto-suppressed for pages without a translation
+(e.g. `/bureau/` is FR-only and emits only `hreflang="fr"` plus `x-default`).
+
 ## Build & deploy
 
 ```bash
