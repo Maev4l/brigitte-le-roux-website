@@ -102,7 +102,7 @@ The full R scripts implement the methods described in the book. Each ZIP archive
 
 For each case study, data are provided in Excel format together with a SPAD project that reproduces the analyses presented in Chapter 6.
 
-1. **The Parkinson Study** — data: [`Parkinson.xls`](/data/Logiciels/Data/Parkinson.xls); SPAD project: [`The Parkinson Study`](/data/livres/CIGDA/Spad_Projects/The%20Parkinson%20Study_2019_03_31.spad)
+1. **The Parkinson Study** — data: [`Parkinson.xls`](/data/Logiciels/Data/Parkinson.xls); SPAD project: [`The Parkinson Study`](/data/livres/CIGDA/Spad_Projects/The_Parkinson_Study_2019_03_31.spad)
 2. **Members of French Parliament and Globalisation** — data: [`MPs&Globalisation.xls`](/data/livres/CIGDA/Data/MPs%26Globalisation.xls); SPAD project: [`MPs-Globalisation`](/data/livres/CIGDA/Spad_Projects/MPs-Globalisation_2019_03_31.spad)
 3. **The European Central Bankers Study** — data and SPAD project available on request from Frédéric Lebaron.
-4. **Cognitive Tests and Education** — data: [`CognitiveTests.xls`](/data/livres/CIGDA/Data/CognitiveTests.xls); SPAD project: [`Cognitive Study`](/data/livres/CIGDA/Spad_Projects/Cognitive%20Study_2019_01_01.spad)
+4. **Cognitive Tests and Education** — data: [`CognitiveTests.xls`](/data/livres/CIGDA/Data/CognitiveTests.xls); SPAD project: [`Cognitive Study`](/data/livres/CIGDA/Spad_Projects/Cognitive_Study_2019_01_01.spad)

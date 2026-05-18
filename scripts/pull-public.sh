@@ -44,7 +44,10 @@ mkdir -p "${SUBDIRS[@]/#/public/}"
 
 for sub in "${SUBDIRS[@]}"; do
   echo "==> Syncing s3://$BUCKET/$sub/ → public/$sub/"
-  aws s3 sync "${EXTRA[@]}" "s3://$BUCKET/$sub/" "public/$sub/"
+  # ${EXTRA[@]+"${EXTRA[@]}"} (alternative-value expansion) — without the
+  # `[@]+…` guard, an empty EXTRA array trips `set -u` on Bash 3.2 (the
+  # macOS default), aborting the no-flags `yarn pull` invocation.
+  aws s3 sync ${EXTRA[@]+"${EXTRA[@]}"} "s3://$BUCKET/$sub/" "public/$sub/"
 done
 
 echo "==> Done"

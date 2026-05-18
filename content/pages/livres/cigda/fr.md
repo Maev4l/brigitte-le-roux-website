@@ -102,7 +102,7 @@ Les scripts R complets permettent la mise en œuvre intégrale des méthodes. Ch
 
 Pour chaque étude de cas, les données sont disponibles en format Excel et un projet SPAD permet de reproduire les analyses.
 
-1. **L'étude Parkinson** — données : [`Parkinson.xls`](/data/Logiciels/Data/Parkinson.xls) ; projet SPAD : [`The Parkinson Study`](/data/livres/CIGDA/Spad_Projects/The%20Parkinson%20Study_2019_03_31.spad)
+1. **L'étude Parkinson** — données : [`Parkinson.xls`](/data/Logiciels/Data/Parkinson.xls) ; projet SPAD : [`The Parkinson Study`](/data/livres/CIGDA/Spad_Projects/The_Parkinson_Study_2019_03_31.spad)
 2. **Les députés et la mondialisation** — données : [`MPs&Globalisation.xls`](/data/livres/CIGDA/Data/MPs%26Globalisation.xls) ; projet SPAD : [`MPs-Globalisation`](/data/livres/CIGDA/Spad_Projects/MPs-Globalisation_2019_03_31.spad)
 3. **Les banquiers centraux européens** — données et projet SPAD sur demande auprès de Frédéric Lebaron.
-4. **Tests cognitifs et éducation** — données : [`CognitiveTests.xls`](/data/livres/CIGDA/Data/CognitiveTests.xls) ; projet SPAD : [`Cognitive Study`](/data/livres/CIGDA/Spad_Projects/Cognitive%20Study_2019_01_01.spad)
+4. **Tests cognitifs et éducation** — données : [`CognitiveTests.xls`](/data/livres/CIGDA/Data/CognitiveTests.xls) ; projet SPAD : [`Cognitive Study`](/data/livres/CIGDA/Spad_Projects/Cognitive_Study_2019_01_01.spad)

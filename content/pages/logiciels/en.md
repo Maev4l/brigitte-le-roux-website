@@ -11,13 +11,13 @@ description: "Datasets, R scripts, software and reference texts for Geometric Da
 
 Dataset used in Chapter 5 of the book [Geometric Data Analysis](/en/livres) (2004).
 
-[Excel EN](/data/Logiciels/Data/Culture_en.xls) · [Excel FR](/data/Logiciels/Data/Culture_fr.xls) · [SPAD project](/data/Logiciels/SPAD%20projects/Culture_2004.spad) — performs data coding and Multiple Correspondence Analysis (MCA).
+[Excel EN](/data/Logiciels/Data/Culture_en.xls) · [Excel FR](/data/Logiciels/Data/Culture_fr.xls) · [SPAD project](/data/Logiciels/SPAD_projects/Culture_2004.spad) — performs data coding and Multiple Correspondence Analysis (MCA).
 
 ### French Worker Survey
 
 Dataset used in the chapter [Interpreting Axes in MCA](/pdfs/publications/Int_Axes.pdf) (1998).
 
-[Excel](/data/Logiciels/Data/Workers.xls) · [SPAD project](/data/Logiciels/SPAD%20projects/FrenchWorkers_2019.spad)
+[Excel](/data/Logiciels/Data/Workers.xls) · [SPAD project](/data/Logiciels/SPAD_projects/FrenchWorkers_2019.spad)
 
 ### Leisure Dataset
 
@@ -41,7 +41,7 @@ Data on the political space of French voters at the end of the 1990s, used in th
 
 Dataset used in the monograph [Multiple Correspondence Analysis](/en/livres/mca) (2010).
 
-[Excel](/data/Logiciels/Data/Taste_Example.xls) · [Archived SPAD project](/data/Logiciels/SPAD%20projects/TasteExample.spad)
+[Excel](/data/Logiciels/Data/Taste_Example.xls) · [Archived SPAD project](/data/Logiciels/SPAD_projects/TasteExample.spad)
 
 ---
 

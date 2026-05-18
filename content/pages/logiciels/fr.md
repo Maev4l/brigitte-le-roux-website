@@ -11,13 +11,13 @@ description: "Jeux de données, scripts R, logiciels et textes de référence po
 
 Jeu de données utilisé au chapitre 5 du livre [Geometric Data Analysis](/livres) (2004).
 
-[Excel FR](/data/Logiciels/Data/Culture_fr.xls) · [Excel EN](/data/Logiciels/Data/Culture_en.xls) · [Projet SPAD](/data/Logiciels/SPAD%20projects/Culture_2004.spad) — le projet SPAD effectue le codage des données et l'analyse des correspondances multiples.
+[Excel FR](/data/Logiciels/Data/Culture_fr.xls) · [Excel EN](/data/Logiciels/Data/Culture_en.xls) · [Projet SPAD](/data/Logiciels/SPAD_projects/Culture_2004.spad) — le projet SPAD effectue le codage des données et l'analyse des correspondances multiples.
 
 ### French Worker Survey
 
 Jeu de données utilisé dans le texte [Interpreting Axes in MCA](/pdfs/publications/Int_Axes.pdf) (1998).
 
-[Excel](/data/Logiciels/Data/Workers.xls) · [Projet SPAD](/data/Logiciels/SPAD%20projects/FrenchWorkers_2019.spad)
+[Excel](/data/Logiciels/Data/Workers.xls) · [Projet SPAD](/data/Logiciels/SPAD_projects/FrenchWorkers_2019.spad)
 
 ### Loisirs
 
@@ -41,7 +41,7 @@ Données sur l'espace politique des électeurs français à la fin des années 1
 
 Jeu de données utilisé dans la monographie [Multiple Correspondence Analysis](/livres/mca) (2010).
 
-[Excel](/data/Logiciels/Data/Taste_Example.xls) · [Projet SPAD archivé](/data/Logiciels/SPAD%20projects/TasteExample.spad)
+[Excel](/data/Logiciels/Data/Taste_Example.xls) · [Projet SPAD archivé](/data/Logiciels/SPAD_projects/TasteExample.spad)
 
 ---
 
