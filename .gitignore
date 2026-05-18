@@ -11,7 +11,13 @@ dist/
 # These files are NOT tracked in git: some exceed GitHub's 100 MB per-file hard limit, and the
 # build/deploy pipeline already treats S3 as the source of truth. See CLAUDE.md for the recovery
 # procedure if `public/` needs to be repopulated from S3.
-public/
+public/*
+
+# Favicon set — small identity files; track in git so fresh clones get them
+# without needing `yarn pull` first. Whitelisted out of the public/* rule above.
+!public/favicon.svg
+!public/favicon.ico
+!public/apple-touch-icon.png
 
 # OS
 .DS_Store
