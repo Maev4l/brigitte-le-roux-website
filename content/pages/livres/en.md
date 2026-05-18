@@ -3,7 +3,7 @@ title: "Books"
 locale: en
 slug: livres
 description: "Books and book chapters on Geometric Data Analysis."
-listing: books
+page_layout: books
 books:
   - slug: "cigda"
     title: "Combinatorial Inference in Geometric Data Analysis"

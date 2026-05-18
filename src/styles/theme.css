@@ -222,65 +222,6 @@ tbody tr:last-child td { border-bottom: none; }
 thead th:last-child,
 tbody td:last-child { padding-right: 0; }
 
-/* Publication lists */
-.book-list,
-.publication-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.book-list li,
-.publication-list li {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--font-display);
-  font-size: 15px;
-  line-height: 1.55;
-}
-/* Year in accent color, Bricolage uppercase — editorial byline style */
-.pub-year {
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-right: 10px;
-}
-.pub-authors { color: var(--text-muted); margin-right: 6px; font-size: 14px; }
-.pub-title { font-weight: 500; }
-.pub-venue { font-style: italic; color: var(--text-muted); font-size: 14px; }
-
-/* Inline book reviews nested under a book entry in .book-list. Mirrors the
-   legacy site's "Revues critiques" / "Book reviews" treatment. */
-.reviews-label {
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 10px 0 4px;
-}
-.review-list {
-  list-style: disc;
-  padding: 0 0 0 22px;
-  margin: 0 0 6px;
-}
-/* Defined AFTER `.book-list li` so it wins on equal specificity — overrides
-   the inherited row padding and border that apply to the parent book entry. */
-.review-list li {
-  padding: 2px 0;
-  border-bottom: none;
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-.review-list em { font-style: italic; }
-.review-list a { color: var(--text); }
-.review-list a:hover { color: var(--accent); }
-
 /* Section divider inside a listing page — used for "Livres traduits" and
    "Chapitres dans des ouvrages collectifs" sub-sections on /livres. Tracked
    uppercase Bricolage centered between two hairlines that fill the rest of
@@ -307,16 +248,6 @@ tbody td:last-child { padding-right: 0; }
   height: 1px;
   background: var(--border);
 }
-.data-sets-link {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 36px 0 0;
-}
-.data-sets-link a { color: var(--text); }
-.data-sets-link a:hover { color: var(--accent); }
 
 /* Sub-section heading inside a listing-section block — used for the
    Internationales / Nationales blocks on /publications. Asymmetric marker:
@@ -343,36 +274,6 @@ tbody td:last-child { padding-right: 0; }
   background: var(--accent);
   flex-shrink: 0;
 }
-
-/* Year marker between groups of publications in §1 — bold Bricolage caps,
-   small but distinct. Vermillion to echo the existing .pub-year inline
-   accent (kept the same tone, just promoted to a group header). */
-.pub-year-group {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 22px 0 6px;
-}
-
-/* The pub-year inline label is no longer emitted per-entry on /publications
-   (year-grouping headers replaced it), but the .pub-year class is left in
-   theme.css for backward compatibility if a future page resurrects it. */
-
-/* Intro-link paragraph at the top of /publications (legacy "LIVRES (cliquer
-   ICI)" cross-reference). */
-.pub-intro-link {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 8px 0 24px;
-}
-.pub-intro-link a { color: var(--text); }
-.pub-intro-link a:hover { color: var(--accent); }
 
 /* Responsive — collapse nav on small screens */
 @media (max-width: 720px) {

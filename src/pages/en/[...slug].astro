@@ -2,6 +2,8 @@
 import { getEntry, render } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
 import HomeLayout from '../../layouts/HomeLayout.astro';
+import BooksLayout from '../../layouts/BooksLayout.astro';
+import PublicationsLayout from '../../layouts/PublicationsLayout.astro';
 
 export async function getStaticPaths() {
   const all = import.meta.glob('../../../content/pages/**/en.md', { eager: true });
@@ -18,152 +20,18 @@ const lookup = (slug ?? 'home') + '/en';
 const entry = await getEntry('pages', lookup);
 if (!entry) throw new Error(`Page not found: ${lookup}`);
 
-// Render the markdown body for every page — non-home pages slot <Content />
-// into PageLayout below; the home page hands it to HomeLayout, where it's
-// rendered inside the .bio div alongside the structured frontmatter data.
-// "page_layout" is used instead of "layout" because Astro treats "layout" as a
-// reserved frontmatter key that Vite resolves as a component import path.
-const isHome = entry.data.page_layout === 'home';
+const layout = entry.data.page_layout;
 const { Content } = await render(entry);
-const listing = entry.data.listing;
-
-// Listings live INLINE in the page's frontmatter (entry.data.books /
-// entry.data.publications). Single source of truth per locale: edit one
-// file. Sort by year descending so the most recent items appear at the top
-// regardless of the order they appear in the YAML.
-const booksData = (entry.data.books ?? []).slice().sort((a, b) => b.year - a.year);
-const publicationsData = (entry.data.publications ?? []).slice().sort((a, b) => b.year - a.year);
-
-const publicationsByYear = publicationsData.reduce((acc, p) => {
-  (acc[p.year] ||= []).push(p);
-  return acc;
-}, {});
-const publicationYearsDesc = Object.keys(publicationsByYear).sort((a, b) => Number(b) - Number(a));
 ---
 
-{isHome ? (
+{layout === 'home' ? (
   <HomeLayout entry={entry} Content={Content} locale="en" />
+) : layout === 'books' ? (
+  <BooksLayout entry={entry} Content={Content} locale="en" />
+) : layout === 'publications' ? (
+  <PublicationsLayout entry={entry} Content={Content} locale="en" />
 ) : (
   <PageLayout title={entry.data.title} locale="en" description={entry.data.description} keywords={entry.data.keywords}>
     <Content />
-    {listing === 'books' && (
-      <>
-        <ul class="book-list">
-          {booksData.map(b => (
-            <li>
-              {b.page_slug
-                ? <a href={`${import.meta.env.BASE_URL}en/${b.page_slug}`}><strong>{b.title}</strong></a>
-                : <strong>{b.title}</strong>}
-              — {b.authors.map((a, i) => (
-                <>{i > 0 && ', '}{a.startsWith('Le Roux') ? <strong>{a}</strong> : a}</>
-              ))}, <em>{b.publisher}</em>, {b.year}
-              {b.external && <> · <a href={b.external}>publisher</a></>}
-              {b.book_review_url && <> · <a href={b.book_review_url}>book review</a></>}
-              {b.reviews && b.reviews.length > 0 && (
-                <>
-                  <div class="reviews-label">Book reviews</div>
-                  <ul class="review-list">
-                    {b.reviews.map(r => (
-                      <li>
-                        <em><a href={r.url}>{r.venue}</a></em> by {r.reviewer} ({r.year})
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-        {entry.data.translated_books && entry.data.translated_books.length > 0 && (
-          <>
-            <h2 class="listing-section">{entry.data.translated_books_title}</h2>
-            <ul class="book-list">
-              {entry.data.translated_books.slice().sort((a, b) => b.year - a.year).map(t => (
-                <li set:html={t.text_html}></li>
-              ))}
-            </ul>
-          </>
-        )}
-        {entry.data.book_chapters && entry.data.book_chapters.length > 0 && (
-          <>
-            <h2 class="listing-section">{entry.data.book_chapters_title}</h2>
-            <ul class="book-list">
-              {entry.data.book_chapters.slice().sort((a, b) => b.year - a.year).map(c => (
-                <li set:html={c.text_html}></li>
-              ))}
-            </ul>
-          </>
-        )}
-        {entry.data.data_sets_link_html && (
-          <p class="data-sets-link" set:html={entry.data.data_sets_link_html}></p>
-        )}
-      </>
-    )}
-    {listing === 'publications' && (
-      <>
-        {entry.data.intro_link_html && (
-          <p class="pub-intro-link" set:html={entry.data.intro_link_html}></p>
-        )}
-        {publicationYearsDesc.map(year => (
-          <>
-            <h3 class="pub-year-group">{year}</h3>
-            <ul class="publication-list">
-              {publicationsByYear[year].map(p => (
-                <li>
-                  <span class="pub-authors">{p.authors.map((a, i) => (
-                    <>{i > 0 && ', '}{a.startsWith('Le Roux') ? <strong>{a}</strong> : a}</>
-                  ))}</span>
-                  <span class="pub-title">{p.title}</span>
-                  {p.venue && <span class="pub-venue"><em>{p.venue}</em></span>}
-                  {p.pages && <span class="pub-pages">, {p.pages}</span>}
-                  {p.see_book_slug && p.see_book_label && (
-                    <> · <a href={`${import.meta.env.BASE_URL}en/${p.see_book_slug}`}>see {p.see_book_label}</a></>
-                  )}
-                  {p.pdf && <> · <a href={p.pdf}>PDF</a></>}
-                  {p.external && <> · <a href={p.external}>link</a></>}
-                </li>
-              ))}
-            </ul>
-          </>
-        ))}
-        {entry.data.technical_reports && entry.data.technical_reports.length > 0 && (
-          <>
-            <h2 class="listing-section">{entry.data.technical_reports_title}</h2>
-            <ul class="publication-list">
-              {entry.data.technical_reports.slice().sort((a, b) => b.year - a.year).map(r => (
-                <li set:html={r.text_html}></li>
-              ))}
-            </ul>
-          </>
-        )}
-        {(entry.data.communications_international || entry.data.communications_national) && (
-          <>
-            {entry.data.communications_title && (
-              <h2 class="listing-section">{entry.data.communications_title}</h2>
-            )}
-            {entry.data.communications_international && entry.data.communications_international.length > 0 && (
-              <>
-                <h3 class="listing-subsection">{entry.data.communications_international_title}</h3>
-                <ul class="publication-list">
-                  {entry.data.communications_international.slice().sort((a, b) => b.year - a.year).map(c => (
-                    <li set:html={c.text_html}></li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {entry.data.communications_national && entry.data.communications_national.length > 0 && (
-              <>
-                <h3 class="listing-subsection">{entry.data.communications_national_title}</h3>
-                <ul class="publication-list">
-                  {entry.data.communications_national.slice().sort((a, b) => b.year - a.year).map(c => (
-                    <li set:html={c.text_html}></li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </>
-        )}
-      </>
-    )}
   </PageLayout>
 )}

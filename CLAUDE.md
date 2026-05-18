@@ -23,11 +23,13 @@ exactly one file in each locale.
   validated by Zod schema in `src/content/config.mjs`:
   - Common: `title`, `locale`, `slug`, optional `description`, optional
     `keywords`.
-  - Listing pages: optional `listing: books|publications` (discriminator),
-    plus an inline `books:` or `publications:` array carrying the entries
-    themselves.
-  - Home: `page_layout: home` selects `HomeLayout.astro`. Other home-only
-    fields: `kicker`, `deck_html`, `portrait`, `tiles`.
+  - Page-layout discriminator (optional): `page_layout: home | books | publications`.
+    When set, the catch-all route routes the entry to the matching dedicated layout
+    (`HomeLayout`, `BooksLayout`, `PublicationsLayout`). When omitted, the page
+    renders via the default `PageLayout`. Listing pages also carry their inline
+    `books:` or `publications:` array as before.
+  - Home-only structured fields (when `page_layout: home`): `kicker`, `deck_html`,
+    `portrait`, `tiles`.
 - **i18n** — `content/i18n/{fr,en}.json` for nav labels, footer text and
   common UI strings (key/value translation data — not editorial content,
   hence JSON is appropriate here).

@@ -76,10 +76,6 @@ const pages = defineCollection({
     slug: z.string(),
     description: z.string().optional(),
     keywords: z.string().optional(),
-    // Optional discriminator. When set, the catch-all route renders the
-    // matching `books` / `publications` array (also in this frontmatter)
-    // as a year-desc listing below the markdown body.
-    listing: z.enum(['books', 'publications']).optional(),
     // Inlined listing arrays carried by the listing pages themselves
     // (content/pages/livres/{fr,en}.md and content/pages/publications/{fr,en}.md).
     // One source of truth per locale: edit the page, the listing updates.
@@ -123,7 +119,7 @@ const pages = defineCollection({
     // the schema level so other pages keep validating.
     // NOTE: "layout" is a reserved Astro frontmatter key that Vite resolves
     // as a component import path — using "page_layout" avoids that.
-    page_layout: z.enum(['home']).optional(),
+    page_layout: z.enum(['home', 'books', 'publications']).optional(),
     kicker: z.string().optional(),
     deck_html: z.string().optional(),
     portrait: z.object({

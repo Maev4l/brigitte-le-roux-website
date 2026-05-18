@@ -3,7 +3,7 @@ title: "Publications"
 locale: en
 slug: publications
 description: "Articles, chapters and presentations sorted by year."
-listing: publications
+page_layout: publications
 publications:
   - slug: "bienaise-le-roux-2017-combinatorial-typicality"
     year: 2017
