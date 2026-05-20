@@ -343,7 +343,7 @@ Location: `packages/functions/git-gateway/`.
 - `GITHUB_APP_INSTALLATION_ID` — non-sensitive integer.
 - `GITHUB_APP_PRIVATE_KEY_PARAM` — SSM parameter path, e.g.
   `brigitte-le-roux-website.github-app-private-key`.
-- `ALLOWED_REPO` — e.g. `Maev4l/brigitte-leroux-website`.
+- `ALLOWED_REPO` — `Maev4l/brigitte-le-roux-website`.
 - `ALLOWED_PATHS` — JSON array of path prefixes the Lambda accepts in
   commits. Initial value: `["packages/website/content/"]`. Media uploads
   go directly to S3 (browser → presigned URL); no git path is needed for
@@ -403,7 +403,7 @@ Terraform: `packages/infrastructure/ssm.tf`.
   token (default 30 d TTL).
 
 Sveltia `config.yml` references this plugin and points `backend.api_root`
-to our API Gateway domain. `backend.repo` is `Maev4l/brigitte-leroux-website`.
+to our API Gateway domain. `backend.repo` is `Maev4l/brigitte-le-roux-website`.
 
 ## §4 — Media uploader Lambda + S3 CORS
 
@@ -549,7 +549,7 @@ infrastructure are deployed locally by the administrator.
 
 - Single role: `gha-website-deploy`.
 - Trust: GitHub OIDC provider; subject locked to
-  `repo:Maev4l/brigitte-leroux-website:ref:refs/heads/main`.
+  `repo:Maev4l/brigitte-le-roux-website:ref:refs/heads/main`.
 - Permissions: `s3:Put/Delete/Get/List*` on the website bucket;
   `cloudfront:CreateInvalidation` on the distribution. Nothing else.
 
