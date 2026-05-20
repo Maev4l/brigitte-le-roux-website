@@ -1,0 +1,87 @@
+# Auto-deploy the Astro static site on push to main.
+# Auth to AWS via OIDC (no long-lived secrets).
+# See docs/superpowers/specs/2026-05-20-content-editing-cms-design.md §5.
+
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/website/**'
+      - '.github/workflows/deploy-website.yml'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write     # required for OIDC token issuance
+  contents: read      # required by actions/checkout
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-central-1
+  S3_BUCKET: brigitte-le-roux-website
+  CF_DISTRIBUTION_ID: E36ANPC8D6F1WW
+  DEPLOY_ROLE_ARN: arn:aws:iam::671123374425:role/gha-website-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+          cache-dependency-path: packages/website/yarn.lock
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies
+        run: yarn --cwd packages/website install --frozen-lockfile
+
+      - name: Build
+        run: yarn --cwd packages/website build
+
+      # Sync built site to S3 EXCEPT the binary prefixes (pdfs/, data/, img/).
+      # Those are canonical in S3, managed independently (CMS uploads via the
+      # media-uploader Lambda when it ships, OR via `yarn frontend:pull` +
+      # manual replacement). --exclude on `aws s3 sync --delete` prevents
+      # both upload AND deletion of matched paths, leaving the binary prefixes
+      # untouched on S3.
+      - name: Sync to S3
+        run: |
+          aws s3 sync packages/website/dist/ "s3://${S3_BUCKET}/" --delete \
+            --exclude "pdfs/*" --exclude "data/*" --exclude "img/*"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CF_DISTRIBUTION_ID}" \
+            --paths "/*" \
+            --output text > /dev/null
+
+      # On push-triggered failure, leave a commit comment pointing at the
+      # Actions logs. Useful when the deploy fails silently (the site stays
+      # on the previous good version, but the committer doesn't know).
+      - name: Comment on commit on failure
+        if: failure() && github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `⚠️ Deploy failed — site not updated. Logs: ${runUrl}`,
+            });
