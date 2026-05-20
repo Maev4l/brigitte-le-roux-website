@@ -23,7 +23,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-BUCKET=$(terraform -chdir=infrastructure output -raw bucket_name)
+BUCKET=$(terraform -chdir=../infrastructure output -raw bucket_name)
 
 EXTRA=()
 SUBDIRS=(pdfs data img)

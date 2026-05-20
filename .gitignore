@@ -4,20 +4,20 @@ yarn-error.log
 yarn-debug.log
 
 # Build output
-dist/
-.astro/
+packages/website/dist/
+packages/website/.astro/
 
-# Site binaries — canonical store is S3 (populated locally by hand, uploaded by `yarn deploy`).
+# Site binaries — canonical store is S3 (populated locally by hand, uploaded by `yarn frontend:deploy`).
 # These files are NOT tracked in git: some exceed GitHub's 100 MB per-file hard limit, and the
 # build/deploy pipeline already treats S3 as the source of truth. See CLAUDE.md for the recovery
 # procedure if `public/` needs to be repopulated from S3.
-public/*
+packages/website/public/*
 
 # Favicon set — small identity files; track in git so fresh clones get them
-# without needing `yarn pull` first. Whitelisted out of the public/* rule above.
-!public/favicon.svg
-!public/favicon.ico
-!public/apple-touch-icon.png
+# without needing `yarn frontend:pull` first. Whitelisted out of the public/* rule above.
+!packages/website/public/favicon.svg
+!packages/website/public/favicon.ico
+!packages/website/public/apple-touch-icon.png
 
 # OS
 .DS_Store
@@ -38,8 +38,8 @@ Thumbs.db
 .env.*.local
 
 # Terraform — state and local workspace (lock file is committed for reproducibility)
-infrastructure/.terraform/
-infrastructure/terraform.tfstate
-infrastructure/terraform.tfstate.backup
-infrastructure/terraform.tfvars
-infrastructure/.terraform.lock.hcl
+packages/infrastructure/.terraform/
+packages/infrastructure/terraform.tfstate
+packages/infrastructure/terraform.tfstate.backup
+packages/infrastructure/terraform.tfvars
+packages/infrastructure/.terraform.lock.hcl

@@ -3,8 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-BUCKET=$(terraform -chdir=infrastructure output -raw bucket_name)
-DIST_ID=$(terraform -chdir=infrastructure output -raw cloudfront_distribution_id)
+BUCKET=$(terraform -chdir=../infrastructure output -raw bucket_name)
+DIST_ID=$(terraform -chdir=../infrastructure output -raw cloudfront_distribution_id)
 
 echo "==> Building"
 yarn build
@@ -41,4 +41,4 @@ aws cloudfront create-invalidation \
   --paths "/*" \
   --output text > /dev/null
 
-echo "==> Done: https://$(terraform -chdir=infrastructure output -raw cloudfront_domain)/"
+echo "==> Done: https://$(terraform -chdir=../infrastructure output -raw cloudfront_domain)/"

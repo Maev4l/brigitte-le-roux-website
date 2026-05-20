@@ -1,0 +1,18 @@
+{
+  "name": "brigitte-leroux-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview --port 4321",
+    "pull": "bash scripts/pull-public.sh",
+    "deploy": "bash scripts/deploy.sh",
+    "check:links": "bash scripts/check-links.sh"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.2",
+    "astro": "5.18.1"
+  }
+}

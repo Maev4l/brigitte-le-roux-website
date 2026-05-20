@@ -6,21 +6,25 @@ CloudFront on `brigitte-le-roux.com`.
 
 ## Stack
 
-- Astro 5 (static output), Yarn, strict version pinning, no TypeScript, no workspaces.
-- Single Astro project at the repo root. Dev server on port `4321`.
-- Theme tokens in `src/styles/theme.css` — Fraunces (display), Bricolage Grotesque (UI),
-  vermillion kicker on parchment ground.
+- Astro 5 (static output), Yarn, strict version pinning, no TypeScript.
+- Monorepo layout: `packages/website/` (Astro site), `packages/infrastructure/`
+  (Terraform). Yarn workspaces are NOT used — the root `package.json` only
+  carries namespaced convenience scripts (`frontend:*`, `infra:*`) that
+  delegate via `yarn --cwd` and `terraform -chdir`. Each package has its own
+  `package.json` with its own strict-pinned deps. Dev server on port `4321`.
+- Theme tokens in `packages/website/src/styles/theme.css` — Fraunces (display),
+  Bricolage Grotesque (UI), vermillion kicker on parchment ground.
 
 ## Content model
 
 **Principle: one page = one file (per locale).** All editorial content for
 a page — including book and publication listings — lives in that page's
-markdown file. No separate `content/books/`, `content/publications/`, or
-`content/data/*.json` indirection. Adding or editing an entry means editing
+markdown file. No separate `packages/website/content/books/`, `packages/website/content/publications/`, or
+`packages/website/content/data/*.json` indirection. Adding or editing an entry means editing
 exactly one file in each locale.
 
-- **Pages** — `content/pages/<slug>/{fr,en}.md`. Frontmatter fields,
-  validated by Zod schema in `src/content/config.mjs`:
+- **Pages** — `packages/website/content/pages/<slug>/{fr,en}.md`. Frontmatter fields,
+  validated by Zod schema in `packages/website/src/content/config.mjs`:
   - Common: `title`, `locale`, `slug`, optional `description`, optional
     `keywords`.
   - Page-layout discriminator (optional): `page_layout: home | books | publications`.
@@ -30,11 +34,11 @@ exactly one file in each locale.
     `books:` or `publications:` array as before.
   - Home-only structured fields (when `page_layout: home`): `kicker`, `deck_html`,
     `portrait`, `tiles`.
-- **i18n** — `content/i18n/{fr,en}.json` for nav labels, footer text and
+- **i18n** — `packages/website/content/i18n/{fr,en}.json` for nav labels, footer text and
   common UI strings (key/value translation data — not editorial content,
   hence JSON is appropriate here).
 
-Catch-all routes (`src/pages/[...slug].astro` and `src/pages/en/[...slug].astro`)
+Catch-all routes (`packages/website/src/pages/[...slug].astro` and `packages/website/src/pages/en/[...slug].astro`)
 read `entry.data.books` / `entry.data.publications` from the page entry,
 sort by `year` descending, and render the listing — so the most recent
 items always appear first regardless of YAML order.
@@ -42,10 +46,10 @@ items always appear first regardless of YAML order.
 ### Inline listing entries
 
 Each entry is a YAML mapping inside the page's `books:` or `publications:`
-array. Schemas in `src/content/config.mjs`. Shapes:
+array. Schemas in `packages/website/src/content/config.mjs`. Shapes:
 
 ```yaml
-# In content/pages/livres/{fr,en}.md — same data in both files since
+# In packages/website/content/pages/livres/{fr,en}.md — same data in both files since
 # book titles are language-identical on this site.
 books:
   - slug: cigda
@@ -54,7 +58,7 @@ books:
     year: 2019
     publisher: "Chapman & Hall/CRC"
     isbn: "9781498781619"
-    page_slug: "livres/cigda"     # optional — detail page under content/pages/
+    page_slug: "livres/cigda"     # optional — detail page under packages/website/content/pages/
     external: "https://..."        # optional — publisher / external link
     # Two review shapes are supported, mirroring the legacy site:
     book_review_url: "https://..." # optional — ONE external review URL,
@@ -71,7 +75,7 @@ books:
 ```
 
 ```yaml
-# In content/pages/publications/{fr,en}.md — each locale's page carries its
+# In packages/website/content/pages/publications/{fr,en}.md — each locale's page carries its
 # own `title` for each entry (titles often genuinely differ FR/EN).
 publications:
   - slug: lebaron-le-roux-2013-geometrie-champ
@@ -84,7 +88,7 @@ publications:
     external: "https://..."               # optional
 ```
 
-The books listing page (`content/pages/livres/{fr,en}.md`) also accepts three
+The books listing page (`packages/website/content/pages/livres/{fr,en}.md`) also accepts three
 optional sub-blocks rendered below the main `books:` list, mirroring the
 legacy site's "Livres traduits" / "Translated books", "Chapitres dans des
 ouvrages collectifs" / "Book chapters" sections, and the bottom-of-page
@@ -94,7 +98,7 @@ split cleanly into author/title/venue fields). The route sorts entries by
 `year` descending before rendering.
 
 ```yaml
-# In content/pages/livres/{fr,en}.md, after the books: array.
+# In packages/website/content/pages/livres/{fr,en}.md, after the books: array.
 translated_books_title: "Livres traduits"          # locale-specific section header
 translated_books:
   - year: 1996
@@ -111,13 +115,13 @@ data_sets_link_html: "Fichiers de données : <a href=\"/logiciels/\">cliquer ici
 
 Adding a new route:
 
-1. Create the markdown pair in `content/pages/<new-slug>/`.
-2. Add the slug + label to `content/i18n/{fr,en}.json`.
-3. Add the route to the `items` array in `src/components/Header.astro`.
+1. Create the markdown pair in `packages/website/content/pages/<new-slug>/`.
+2. Add the slug + label to `packages/website/content/i18n/{fr,en}.json`.
+3. Add the route to the `items` array in `packages/website/src/components/Header.astro`.
 
 Adding a new book / publication:
 
-1. Open `content/pages/livres/{fr,en}.md` (or `publications/{fr,en}.md`).
+1. Open `packages/website/content/pages/livres/{fr,en}.md` (or `publications/{fr,en}.md`).
 2. Append a new entry to the `books:` (or `publications:`) array per the
    schema above. Both locale files need the entry — for books the YAML is
    identical in both; for publications the `title` field carries the
@@ -127,60 +131,60 @@ Adding a new book / publication:
 
 ## Static assets
 
-`public/` contains binaries served verbatim at URL root:
+`packages/website/public/` contains binaries served verbatim at URL root:
 
-- `public/pdfs/` → `/pdfs/foo.pdf`
-- `public/data/` → `/data/bar.xls`
-- `public/img/`  → `/img/photoweb.jpg`
+- `packages/website/public/pdfs/` → `/pdfs/foo.pdf`
+- `packages/website/public/data/` → `/data/bar.xls`
+- `packages/website/public/img/`  → `/img/photoweb.jpg`
 
-**`public/` is gitignored.** The canonical store is the production S3 bucket. One file
-in `public/data/` exceeds GitHub's 100 MB per-file cap, so tracking it in git is not
+**`packages/website/public/` is gitignored.** The canonical store is the production S3 bucket. One file
+in `packages/website/public/data/` exceeds GitHub's 100 MB per-file cap, so tracking it in git is not
 viable; rather than splitting strategy with Git LFS, the project treats S3 as the
-source of truth — which is consistent with how `yarn deploy` already works (build →
+source of truth — which is consistent with how `yarn frontend:deploy` already works (build →
 sync `dist/` to S3).
 
 Reference these assets from markdown/JSON as plain absolute paths (e.g.
 `[PDF](/pdfs/foo.pdf)`).
 
-**Pulling `public/` from S3** — fresh clone, new machine, or any time you want to
+**Pulling `packages/website/public/` from S3** — fresh clone, new machine, or any time you want to
 sync down updates that another contributor pushed:
 
 ```bash
-yarn pull                       # pull all three subtrees
-yarn pull --dry-run             # preview without writing
-yarn pull --delete              # also delete local files no longer in S3
-yarn pull pdfs                  # restrict to one subtree (pdfs|data|img)
+yarn frontend:pull                       # pull all three subtrees
+yarn frontend:pull --dry-run             # preview without writing
+yarn frontend:pull --delete              # also delete local files no longer in S3
+yarn frontend:pull pdfs                  # restrict to one subtree (pdfs|data|img)
 ```
 
-(Excludes built HTML pages — those are regenerated by `yarn build`.)
+(Excludes built HTML pages — those are regenerated by `yarn frontend:build`.)
 
 ## Multi-writer workflow
 
-`public/` is the source of truth for site binaries and lives canonically in S3.
+`packages/website/public/` is the source of truth for site binaries and lives canonically in S3.
 When several contributors edit content from different machines:
 
-1. `yarn pull` — sync any changes others have pushed since your last sync.
-2. Edit `public/` locally (add/replace PDFs, data files, photos).
-3. `yarn deploy` — build, push `public/` to S3, invalidate CloudFront.
+1. `yarn frontend:pull` — sync any changes others have pushed since your last sync.
+2. Edit `packages/website/public/` locally (add/replace PDFs, data files, photos).
+3. `yarn frontend:deploy` — build, push `packages/website/public/` to S3, invalidate CloudFront.
 
-Always pull before editing. `yarn pull` uses `aws s3 sync`'s default mtime
+Always pull before editing. `yarn frontend:pull` uses `aws s3 sync`'s default mtime
 comparison, so it correctly downloads anything newer on S3 without overwriting
 unchanged local files.
 
 **Conflict semantics**: last-writer-wins on S3. **Object versioning is intentionally
 not enabled** — see the spec's "Deployment infrastructure" note. Enable
-`aws_s3_bucket_versioning` in `infrastructure/s3.tf` if accidental overwrites or
+`aws_s3_bucket_versioning` in `packages/infrastructure/s3.tf` if accidental overwrites or
 multi-writer concurrency become a real problem; it gives free rollback at the
 cost of storing every superseded version.
 
 ## SEO
 
-Every page renders a full meta-tag stack from `src/layouts/BaseLayout.astro`:
+Every page renders a full meta-tag stack from `packages/website/src/layouts/BaseLayout.astro`:
 description, keywords, author, canonical URL, `hreflang` alternates (FR↔EN
 where both versions exist), Open Graph tags, and Twitter card tags. A
-generated `robots.txt` (from `src/pages/robots.txt.js`) and a sitemap
+generated `robots.txt` (from `packages/website/src/pages/robots.txt.js`) and a sitemap
 (`sitemap-index.xml` + chunks, via `@astrojs/sitemap`) are emitted at build
-time and uploaded to S3 by `yarn deploy`.
+time and uploaded to S3 by `yarn frontend:deploy`.
 
 **Page-level overrides (optional, in markdown frontmatter):**
 
@@ -195,7 +199,7 @@ keywords: "narrow, page-specific, keyword, list"
 ```
 
 If `description` or `keywords` is omitted, the locale-wide defaults from
-`content/i18n/{fr,en}.json` (`site.description`, `site.keywords`) are used.
+`packages/website/content/i18n/{fr,en}.json` (`site.description`, `site.keywords`) are used.
 Override only when a page benefits from a narrower / more specific snippet —
 most pages can rely on the defaults.
 
@@ -205,15 +209,16 @@ most pages can rely on the defaults.
 ## Build & deploy
 
 ```bash
-yarn install
-yarn dev                # http://localhost:4321
-yarn build              # → dist/
-yarn deploy             # build + S3 sync + CloudFront invalidation
+yarn --cwd packages/website install
+yarn frontend:dev       # http://localhost:4321
+yarn frontend:build     # → packages/website/dist/
+yarn frontend:pull      # sync packages/website/public/ from S3
+yarn frontend:deploy    # build + S3 sync + CloudFront invalidation
 yarn infra:plan         # terraform plan
 yarn infra:apply        # terraform apply
 ```
 
-Infra is Terraform under `infrastructure/`. Remote state lives at
+Infra is Terraform under `packages/infrastructure/`. Remote state lives at
 `s3://global-tf-states/brigitte-le-roux-website/terraform.tfstate` (region `eu-central-1`,
 S3-native locking via `use_lockfile = true`). Route 53 hosted zone
 `Z10238282ED2UHGM8STZA` and the ACM cert for `brigitte-le-roux.com` (in `us-east-1`) are
