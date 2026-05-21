@@ -15,7 +15,7 @@ No Lambdas, no routes, no CMS code yet — that's Plan 4+.
 
 ```
 cms.brigitte-le-roux.com  (CloudFront, one cert)
-├── /        →  S3 origin (Sveltia static SPA, from packages/website/public/admin/ → s3://bucket/admin/)
+├── /        →  S3 origin (Sveltia static SPA, from packages/website/public/cms/ → s3://bucket/cms/)
 └── /api/*   →  API Gateway origin (Lambda routes, no caching)
 ```
 
@@ -99,7 +99,7 @@ Write `packages/infrastructure/cognito.tf` with this exact content:
 # ---------------------------------------------------------------------------
 # Cognito User Pool for the CMS editor (Brigitte).
 # Authentication entry point. The Hosted UI handles the sign-in form;
-# the user is redirected back to the CMS at /admin/ with an auth code,
+# the user is redirected back to the CMS at cms.brigitte-le-roux.com/ with an auth code,
 # which Sveltia (in Plan 6) will exchange for a Cognito JWT.
 # ---------------------------------------------------------------------------
 
@@ -224,7 +224,7 @@ output "cognito_app_client_id" {
 
 output "cognito_hosted_ui_url" {
   value       = "https://${aws_cognito_user_pool_domain.cms.domain}.auth.${var.aws_region}.amazoncognito.com"
-  description = "Hosted UI base URL. Login URL: https://<this>/login?client_id=<app_client_id>&response_type=code&scope=openid+email&redirect_uri=https://brigitte-le-roux.com/admin/"
+  description = "Hosted UI base URL. Login URL: https://<this>/login?client_id=<app_client_id>&response_type=code&scope=openid+email&redirect_uri=https%3A%2F%2Fcms.brigitte-le-roux.com%2F"
 }
 
 output "cognito_issuer" {

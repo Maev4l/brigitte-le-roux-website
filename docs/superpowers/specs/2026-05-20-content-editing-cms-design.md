@@ -23,7 +23,7 @@ no AWS knowledge on her side.
 
 | Topic | Decision |
 | --- | --- |
-| Editing surface | Web browser; admin at `brigitte-le-roux.com/admin/` |
+| Editing surface | Web browser; CMS at `cms.brigitte-le-roux.com/` (Sveltia SPA hosted at `s3://brigitte-le-roux-website/cms/*`, served via a dedicated CloudFront distribution) |
 | Publish behaviour | Auto-publish — every save reaches the live site within ~1–2 min |
 | CMS | Sveltia CMS (modern, free, active fork of Decap; single static SPA, git-backed) |
 | Editor auth | AWS Cognito (User Pool, email + password). Sveltia renders its own login form and calls Cognito directly via `amazon-cognito-identity-js` (USER_SRP_AUTH). No Hosted UI redirect — Brigitte stays on `cms.brigitte-le-roux.com` end-to-end. No GitHub account for Brigitte. |
@@ -68,7 +68,7 @@ GitHub repo (public)                       │
 GitHub Actions: yarn build → S3 sync → CF invalidate
   │                                        │
   ▼                                        ▼
-S3 (HTML, CSS, JS, /admin/)  ◄────── direct browser PUT (PDF / images) ◄── Sveltia
+S3 (HTML, CSS, JS, /cms/)  ◄────── direct browser PUT (PDF / images) ◄── Sveltia
   │
   ▼
 CloudFront ─── public visitors
@@ -169,25 +169,25 @@ begin.
 ## §1 — Sveltia CMS hosting
 
 Sveltia is a static SPA. It is served from the website's own S3 bucket at
-the path prefix `/admin/`. No separate hosting.
+the path prefix `/cms/`. No separate hosting.
 
 Files in the website package:
 
-- `packages/website/public/admin/index.html` — pulls Sveltia from a pinned
-  CDN URL (or a self-hosted copy in `public/admin/vendor/sveltia/`). Initial
+- `packages/website/public/cms/index.html` — pulls Sveltia from a pinned
+  CDN URL (or a self-hosted copy in `public/cms/vendor/sveltia/`). Initial
   decision: CDN pin to a specific Sveltia version tag.
-- `packages/website/public/admin/config.yml` — Sveltia collection
+- `packages/website/public/cms/config.yml` — Sveltia collection
   configuration (§2).
-- `packages/website/public/admin/sveltia-cognito-backend.js` — custom
+- `packages/website/public/cms/sveltia-cognito-backend.js` — custom
   backend plugin (~80 lines) that wires Sveltia to Cognito + our git-gateway.
-- `packages/website/public/admin/sveltia-s3-media.js` — custom media library
+- `packages/website/public/cms/sveltia-s3-media.js` — custom media library
   plugin (~150 lines) that wires "Upload file" to our media-uploader.
 
 Both JS files are committed into the website repo (they are part of the
 deployable artefact, not gitignored).
 
-CloudFront serves `/admin/` from S3 same as the rest of the site. Routing
-constraint: SPA-style refresh on `/admin/foo` should serve `/admin/index.html`.
+CloudFront serves `/cms/` from S3 same as the rest of the site. Routing
+constraint: SPA-style refresh on `/cms/foo` should serve `/cms/index.html`.
 The existing CloudFront function (`packages/infrastructure/cloudfront-function.js`
 after §0) will be extended to handle this if it doesn't already.
 
@@ -411,7 +411,7 @@ Terraform: `packages/infrastructure/ssm.tf`.
 
 ### Custom Sveltia backend plugin
 
-`packages/website/public/admin/sveltia-cognito-backend.js`. ~250 lines of JS.
+`packages/website/public/cms/sveltia-cognito-backend.js`. ~250 lines of JS.
 
 The plugin replaces Sveltia's OAuth-redirect flow with an in-app login
 form that talks to Cognito directly via `amazon-cognito-identity-js`.
@@ -550,7 +550,7 @@ requiring public ACLs.
 
 ### Custom Sveltia media library plugin
 
-`packages/website/public/admin/sveltia-s3-media.js`. ~150 lines of JS.
+`packages/website/public/cms/sveltia-s3-media.js`. ~150 lines of JS.
 
 - Implements Sveltia's media-library plugin interface.
 - On "Choose file":
@@ -723,7 +723,7 @@ Defence in depth:
    overwrites become a risk.
 5. Schema-drift lint: small CI check that flags when
    `packages/website/src/content/config.mjs` diverges from
-   `packages/website/public/admin/config.yml`.
+   `packages/website/public/cms/config.yml`.
 
 ## Implementation phasing
 
