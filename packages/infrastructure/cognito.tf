@@ -1,8 +1,9 @@
 # ---------------------------------------------------------------------------
 # Cognito User Pool for the CMS editor (Brigitte).
-# Authentication entry point. The Hosted UI handles the sign-in form;
-# the user is redirected back to the CMS at cms.brigitte-le-roux.com/ with
-# an auth code, which Sveltia (in Plan 6) will exchange for a Cognito JWT.
+# Authentication entry point. Sveltia (Plan 6) renders its own login form
+# and calls Cognito directly via amazon-cognito-identity-js using
+# USER_SRP_AUTH — no Hosted UI, no OAuth redirect. The editor stays on
+# cms.brigitte-le-roux.com end-to-end.
 # ---------------------------------------------------------------------------
 
 resource "aws_cognito_user_pool" "cms" {
@@ -68,28 +69,13 @@ resource "aws_cognito_user_pool" "cms" {
 }
 
 # App client used by Sveltia (single-page app in the browser). Public client
-# (no client secret). OAuth Authorization Code flow with PKCE.
+# (no client secret). In-app SRP login — no OAuth Hosted UI flow.
 resource "aws_cognito_user_pool_client" "cms" {
   name         = "brigitte-le-roux-website-cms-spa"
   user_pool_id = aws_cognito_user_pool.cms.id
 
   # No client secret — required for public SPA clients.
   generate_secret = false
-
-  # OAuth Auth Code + PKCE.
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["openid", "email"]
-
-  # After login the Hosted UI redirects to the CMS at cms.brigitte-le-roux.com.
-  # That subdomain doesn't have a DNS record yet (it will when the CloudFront
-  # distribution for the CMS lands in a later plan). The redirect URL is
-  # registered now so we don't need to update it later.
-  callback_urls = ["https://cms.brigitte-le-roux.com/"]
-  logout_urls   = ["https://cms.brigitte-le-roux.com/"]
-
-  # Supported identity providers: just COGNITO (the User Pool itself).
-  supported_identity_providers = ["COGNITO"]
 
   # Token validity. Access + id tokens 60 min (must refresh; Sveltia's
   # plugin handles this). Refresh token valid 1 year — the editor stays
@@ -108,9 +94,10 @@ resource "aws_cognito_user_pool_client" "cms" {
   # or incorrect password" instead of differentiating).
   prevent_user_existence_errors = "ENABLED"
 
-  # Auth flows enabled: ALLOW_USER_SRP_AUTH (standard SRP login from the
-  # Hosted UI) and ALLOW_REFRESH_TOKEN_AUTH (refresh flow used silently by
-  # the SPA when the access token expires).
+  # Auth flows enabled: ALLOW_USER_SRP_AUTH (Sveltia's in-app login uses
+  # the SRP cryptographic exchange via amazon-cognito-identity-js) and
+  # ALLOW_REFRESH_TOKEN_AUTH (refresh flow used silently when the access
+  # token expires).
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
@@ -134,12 +121,7 @@ output "cognito_user_pool_id" {
 
 output "cognito_app_client_id" {
   value       = aws_cognito_user_pool_client.cms.id
-  description = "App Client ID — used by Sveltia (Plan 6) to construct the Hosted UI URL"
-}
-
-output "cognito_hosted_ui_url" {
-  value       = "https://${aws_cognito_user_pool_domain.cms.domain}.auth.${var.aws_region}.amazoncognito.com"
-  description = "Hosted UI base URL. Login URL: https://<this>/login?client_id=<app_client_id>&response_type=code&scope=openid+email&redirect_uri=https%3A%2F%2Fcms.brigitte-le-roux.com%2F"
+  description = "App Client ID — used by Sveltia (Plan 6) to authenticate via USER_SRP_AUTH"
 }
 
 output "cognito_issuer" {
