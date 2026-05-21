@@ -498,7 +498,10 @@ Location: `packages/functions/media-uploader/`.
 
 #### Endpoint
 
-`POST /media/upload-url` (Cognito JWT required).
+`POST /api/media/upload-url` (Cognito JWT required). Same `/api/*`
+prefix as the github-gateway routes — the unified
+`cms.brigitte-le-roux.com` CloudFront distribution (later plan) routes
+`/api/*` to the HTTP API.
 
 Request body:
 
@@ -506,7 +509,8 @@ Request body:
 {
   "filename": "foo.pdf",
   "contentType": "application/pdf",
-  "folder": "pdfs/publications"
+  "folder": "pdfs/publications",
+  "size": 1234567
 }
 ```
 
@@ -531,7 +535,15 @@ Response:
   convention, commit 6155f17).
 - Filename pattern after normalization: `[A-Za-z0-9._-]+`. Reject anything
   else.
-- Size caps enforced via the presigned URL's `Content-Length` range:
+- Size caps enforced two ways: (1) the caller declares `size` in the
+  request body and the Lambda rejects values above the per-type cap with
+  a 400 at request time; (2) the presigned PUT URL binds the exact
+  `ContentLength` in its signature, so S3 rejects PUTs whose body length
+  differs from the signed value (403). The original spec wording
+  "Content-Length range" implied a presigned POST form policy
+  (`content-length-range`); presigned PUT with bound `ContentLength`
+  gives equivalent enforcement with a simpler client wire format
+  (single PUT, no multipart form). Caps:
   - PDF ≤ 50 MB
   - Image ≤ 10 MB
   - Data file ≤ 100 MB
@@ -564,13 +576,18 @@ Added to the existing website bucket. No new bucket.
 
 ```hcl
 cors_rule {
-  allowed_origins = ["https://brigitte-le-roux.com"]
+  allowed_origins = ["https://cms.brigitte-le-roux.com"]
   allowed_methods = ["PUT", "GET", "HEAD"]
   allowed_headers = ["*"]
   expose_headers  = ["ETag"]
   max_age_seconds = 3000
 }
 ```
+
+The allowed origin is `cms.brigitte-le-roux.com` (where Sveltia lives) —
+not the public site `brigitte-le-roux.com`, which never initiates a PUT.
+Add `brigitte-le-roux.com` later only if the main site ever needs a
+browser-side upload UX.
 
 Bucket stays private. Presigned URLs honour the signature without
 requiring public ACLs.
@@ -582,16 +599,31 @@ requiring public ACLs.
 - Implements Sveltia's media-library plugin interface.
 - On "Choose file":
   1. Browser file picker → user picks a local file.
-  2. Plugin POSTs to `/media/upload-url` with metadata + Bearer Cognito token.
+  2. Plugin POSTs to `/api/media/upload-url` with metadata + Bearer Cognito token.
   3. Plugin receives `uploadUrl` + `publicPath`.
   4. Plugin issues `fetch(uploadUrl, { method: 'PUT', body: file })`.
      Progress reported to Sveltia's built-in progress UI.
   5. On success, returns `publicPath` to Sveltia, which inserts it into
      the field being edited.
 
-Out of scope for v1: browsing/picking existing media. Sveltia cannot list
-S3 contents through this plugin. Brigitte either uploads new or pastes a
-known path. Revisit if reuse becomes painful.
+Out of scope for v1:
+
+- **Browsing/picking existing media.** Sveltia cannot list S3 contents
+  through this plugin. Brigitte either uploads new or pastes a known
+  path. Revisit if reuse becomes painful.
+- **Deleting media.** No DELETE endpoint is exposed by the
+  media-uploader. Replacing an existing file is supported (PUT to the
+  same key overwrites + invalidates CloudFront). Removing a file's
+  link from a page is supported (Brigitte clears the field via the
+  github-gateway commit — the S3 object becomes orphaned but no longer
+  reachable from any page). Hard deletion of the underlying S3 object
+  is administrator-only via the AWS console — expected to be rare
+  (copyright takedown, etc.). Storage cost at this volume is
+  negligible. If orphans accumulate enough to matter, a scheduled
+  garbage-collection Lambda that diffs S3 against references in
+  `packages/website/content/` is the safer next step (no UX changes
+  required, no risk of accidental delete via typo from an editor who
+  can't see the filesystem). Revisit when needed.
 
 ## §5 — CI/CD (website only)
 
@@ -731,6 +763,7 @@ Defence in depth:
 ### Explicit out-of-scope (v1)
 
 - Media browsing / reuse in Sveltia.
+- Media deletion (no DELETE endpoint; replace-by-overwrite handles most cases — see §4).
 - Editorial workflow (draft → review → publish).
 - Bulk import / migration UI.
 - Sveltia-driven editing of `content/i18n/`.
