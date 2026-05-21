@@ -269,7 +269,7 @@ const t = data.tiles;
     <div class="mat"><img src={data.portrait.src} alt={data.portrait.alt} /></div>
   </figure>
 
-  <h1>Brigitte <span class="it">Le Roux</span></h1>
+  <h1>the user <span class="it">Le Roux</span></h1>
 
   <p class="deck" set:html={data.deck_html}></p>
 
@@ -692,16 +692,16 @@ Replace the entire contents of `content/pages/home/fr.md` with:
 
 ```markdown
 ---
-title: "Brigitte Le Roux"
+title: "the user"
 locale: fr
 slug: "home"
-description: "Page d'accueil de Brigitte Le Roux, chercheuse spécialiste de l'analyse géométrique des données."
+description: "Page d'accueil de the user, chercheuse spécialiste de l'analyse géométrique des données."
 page_layout: home
 kicker: "Analyse géométrique des données · Recherche"
 deck_html: "Chercheuse en mathématiques. Analyse géométrique des données — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>et CEVIPOF&nbsp;/&nbsp;CNRS."
 portrait:
   src: "/img/photoweb.jpg"
-  alt: "Brigitte Le Roux"
+  alt: "the user"
 tiles:
   affiliations:
     title: "Affiliations"
@@ -721,7 +721,7 @@ tiles:
     book_meta: "B. Le Roux & H. Rouanet — Chapman & Hall / CRC, 2019."
 ---
 
-Les travaux de Brigitte Le Roux portent sur l'*analyse géométrique des données* (AGD) et ses applications, une approche à la croisée de la statistique multivariée, de la sociologie quantitative et de la science politique.
+Les travaux de the user portent sur l'*analyse géométrique des données* (AGD) et ses applications, une approche à la croisée de la statistique multivariée, de la sociologie quantitative et de la science politique.
 
 Affiliée au laboratoire [MAP5](http://map5.mi.parisdescartes.fr/) à l'Université Paris Cité (45 rue des Saints-Pères, bureau 731-E) et chercheuse associée au [CEVIPOF&nbsp;/&nbsp;CNRS](https://www.sciencespo.fr/cevipof/), elle développe et applique des méthodes de l'AGD à des objets relevant des sciences sociales.
 
@@ -734,12 +734,12 @@ Open `http://localhost:4321/`. Verify:
 
 1. Above the headline, a small vermillion 38 px bar followed by the text
    `ANALYSE GÉOMÉTRIQUE DES DONNÉES · RECHERCHE` (uppercase, tracked).
-2. The headline reads `Brigitte Le Roux`, with "Le Roux" set in italic
+2. The headline reads `the user`, with "Le Roux" set in italic
    Fraunces. Both words on the same line at desktop widths; "Le Roux" may
    wrap to a second line at narrow viewports.
 3. The portrait (`photoweb.jpg`) sits to the right of the headline, framed in
    a cream mat with a 1 px border. Its top edge is on the same Y as the top
-   of "Brigitte".
+   of "the user".
 4. Below the headline, ~28 px of vertical space, then the italic deck reads
    `Chercheuse en mathématiques. Analyse géométrique des données — MAP5,
    Université Paris Cité,` on one line and `et CEVIPOF / CNRS.` on the next.
@@ -762,16 +762,16 @@ Replace the entire contents of `content/pages/home/en.md` with:
 
 ```markdown
 ---
-title: "Brigitte Le Roux"
+title: "the user"
 locale: en
 slug: "home"
-description: "Homepage of Brigitte Le Roux, researcher specialising in Geometric Data Analysis."
+description: "Homepage of the user, researcher specialising in Geometric Data Analysis."
 page_layout: home
 kicker: "Geometric Data Analysis · Research"
 deck_html: "Mathematician. Geometric Data Analysis — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>and CEVIPOF&nbsp;/&nbsp;CNRS."
 portrait:
   src: "/img/photoweb.jpg"
-  alt: "Brigitte Le Roux"
+  alt: "the user"
 tiles:
   affiliations:
     title: "Affiliations"
@@ -791,7 +791,7 @@ tiles:
     book_meta: "B. Le Roux & H. Rouanet — Chapman & Hall / CRC, 2019."
 ---
 
-Brigitte Le Roux's work focuses on *Geometric Data Analysis* (GDA) and its applications, an approach at the crossroads of multivariate statistics, quantitative sociology and political science.
+The user's work focuses on *Geometric Data Analysis* (GDA) and its applications, an approach at the crossroads of multivariate statistics, quantitative sociology and political science.
 
 Member of [MAP5](http://map5.mi.parisdescartes.fr/) at Université Paris Cité (45 rue des Saints-Pères, office 731-E) and associate researcher at [CEVIPOF&nbsp;/&nbsp;CNRS](https://www.sciencespo.fr/cevipof/), she develops and applies GDA methods to objects in the social sciences.
 
@@ -803,7 +803,7 @@ The methods studied include Multiple Correspondence Analysis (MCA), Principal Co
 Open `http://localhost:4321/en/`. Verify:
 
 1. Kicker reads `GEOMETRIC DATA ANALYSIS · RESEARCH`.
-2. Headline still `Brigitte Le Roux` (same in both locales).
+2. Headline still `the user` (same in both locales).
 3. Deck reads `Mathematician. Geometric Data Analysis — MAP5, Université
    Paris Cité, and CEVIPOF / CNRS.` with the same widow-control behaviour.
 4. Tile titles: `AFFILIATIONS` / `METHODS` / `NEW`.
@@ -900,7 +900,7 @@ criterion fails, open a follow-up task to fix it before merging.
 
 1. **Portrait–headline top alignment at ≥ 1100 px.** Resize to ≥ 1100 px wide.
    The top edge of the portrait mat sits on the exact same Y as the cap-line
-   of "Brigitte". (Use the browser's element inspector — both the `<figure
+   of "the user". (Use the browser's element inspector — both the `<figure
    class="portrait">` and `<h1>` `getBoundingClientRect().top` should match
    within ±1 px.)
 

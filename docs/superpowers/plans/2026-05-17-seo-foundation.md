@@ -152,7 +152,7 @@ Both files already contain a `site` object (with `title` and `tagline`). This ta
 Before:
 ```json
   "site": {
-    "title": "Brigitte Le Roux",
+    "title": "the user",
     "tagline": "Analyse géométrique des données"
   },
 ```
@@ -160,10 +160,10 @@ Before:
 After:
 ```json
   "site": {
-    "title": "Brigitte Le Roux",
+    "title": "the user",
     "tagline": "Analyse géométrique des données",
-    "description": "Site personnel de Brigitte Le Roux, chercheuse en analyse géométrique des données (MAP5, Université Paris Cité ; CEVIPOF/CNRS).",
-    "keywords": "Brigitte Le Roux, analyse géométrique des données, analyse des correspondances multiples, ACM, AGD, statistique appliquée, MAP5, CEVIPOF, sociologie quantitative"
+    "description": "Site personnel de the user, chercheuse en analyse géométrique des données (MAP5, Université Paris Cité ; CEVIPOF/CNRS).",
+    "keywords": "the user, analyse géométrique des données, analyse des correspondances multiples, ACM, AGD, statistique appliquée, MAP5, CEVIPOF, sociologie quantitative"
   },
 ```
 
@@ -172,7 +172,7 @@ After:
 Before:
 ```json
   "site": {
-    "title": "Brigitte Le Roux",
+    "title": "the user",
     "tagline": "Geometric Data Analysis"
   },
 ```
@@ -180,10 +180,10 @@ Before:
 After:
 ```json
   "site": {
-    "title": "Brigitte Le Roux",
+    "title": "the user",
     "tagline": "Geometric Data Analysis",
-    "description": "Personal academic site of Brigitte Le Roux, researcher in Geometric Data Analysis (MAP5, Université Paris Cité; CEVIPOF/CNRS).",
-    "keywords": "Brigitte Le Roux, Geometric Data Analysis, Multiple Correspondence Analysis, MCA, GDA, applied statistics, MAP5, CEVIPOF, quantitative sociology, case studies"
+    "description": "Personal academic site of the user, researcher in Geometric Data Analysis (MAP5, Université Paris Cité; CEVIPOF/CNRS).",
+    "keywords": "the user, Geometric Data Analysis, Multiple Correspondence Analysis, MCA, GDA, applied statistics, MAP5, CEVIPOF, quantitative sociology, case studies"
   },
 ```
 
@@ -328,7 +328,7 @@ import enStrings from '../../content/i18n/en.json';
 const { title, locale = 'fr', description, keywords } = Astro.props;
 
 const strings = locale === 'en' ? enStrings : frStrings;
-const fullTitle = `${title} — Brigitte Le Roux`;
+const fullTitle = `${title} — the user`;
 const metaDescription = description || strings.site.description;
 const metaKeywords = keywords || strings.site.keywords;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
@@ -362,7 +362,7 @@ const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).hre
   <title>{fullTitle}</title>
   <meta name="description" content={metaDescription} />
   <meta name="keywords" content={metaKeywords} />
-  <meta name="author" content="Brigitte Le Roux" />
+  <meta name="author" content="the user" />
   <link rel="canonical" href={canonical} />
 
   {frExists && <link rel="alternate" hreflang="fr" href={frUrl} />}
@@ -375,7 +375,7 @@ const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).hre
   <meta property="og:type" content="website" />
   <meta property="og:locale" content={ogLocale} />
   <meta property="og:image" content={ogImage} />
-  <meta property="og:site_name" content="Brigitte Le Roux" />
+  <meta property="og:site_name" content="the user" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={fullTitle} />
@@ -508,14 +508,14 @@ Run:
 grep 'name="description"' dist/index.html
 ```
 
-Expected: a line whose content begins with `Site personnel de Brigitte Le Roux`.
+Expected: a line whose content begins with `Site personnel de the user`.
 
 Run:
 ```bash
 grep 'name="description"' dist/en/index.html
 ```
 
-Expected: a line whose content begins with `Personal academic site of Brigitte Le Roux`.
+Expected: a line whose content begins with `Personal academic site of the user`.
 
 - [ ] **Step 6: Commit**
 

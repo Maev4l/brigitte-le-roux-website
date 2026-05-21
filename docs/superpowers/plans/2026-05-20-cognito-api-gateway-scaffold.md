@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Stand up the authentication entry point for the CMS:
-- A Cognito User Pool where the editor (Brigitte) will eventually authenticate.
+- A Cognito User Pool where the editor (the user) will eventually authenticate.
 - A Hosted UI for the login flow (sign-in page rendered by AWS, branded with our App Client).
 - A single manually-created test user, used to validate the Hosted UI login flow end-to-end.
 
@@ -19,7 +19,7 @@ cms.brigitte-le-roux.com  (CloudFront, one cert)
 └── /api/*   →  API Gateway origin (Lambda routes, no caching)
 ```
 
-That unified architecture means same-origin for everything Brigitte does (no CORS friction). The Cognito callback URL therefore points at `https://cms.brigitte-le-roux.com/`.
+That unified architecture means same-origin for everything the user does (no CORS friction). The Cognito callback URL therefore points at `https://cms.brigitte-le-roux.com/`.
 
 This plan stops short of building the CloudFront distribution itself — that lands in a later plan once the Lambdas + Sveltia config exist to serve through it. ACM certs for `cms.brigitte-le-roux.com` already exist (admin-created):
 - us-east-1: `arn:aws:acm:us-east-1:671123374425:certificate/fba97e58-df50-4fc7-ab77-5ee7da02e185` (for the future CloudFront)
@@ -97,7 +97,7 @@ Write `packages/infrastructure/cognito.tf` with this exact content:
 
 ```hcl
 # ---------------------------------------------------------------------------
-# Cognito User Pool for the CMS editor (Brigitte).
+# Cognito User Pool for the CMS editor (the user).
 # Authentication entry point. The Hosted UI handles the sign-in form;
 # the user is redirected back to the CMS at cms.brigitte-le-roux.com/ with an auth code,
 # which Sveltia (in Plan 6) will exchange for a Cognito JWT.
@@ -129,7 +129,7 @@ resource "aws_cognito_user_pool" "cms" {
     temporary_password_validity_days = 7
   }
 
-  # MFA optional at launch. Brigitte can opt in from her account settings.
+  # MFA optional at launch. The user can opt in from her account settings.
   # Tighten to ON once she's comfortable with the login flow.
   mfa_configuration = "OPTIONAL"
 
@@ -180,7 +180,7 @@ resource "aws_cognito_user_pool_client" "cms" {
   supported_identity_providers = ["COGNITO"]
 
   # Token validity. Access tokens 1 h (must refresh; Sveltia's plugin
-  # handles this). Refresh tokens 30 d (Brigitte stays logged in for ~30 d
+  # handles this). Refresh tokens 30 d (the user stays logged in for ~30 d
   # unless she clears storage).
   refresh_token_validity = 30
   access_token_validity  = 60
@@ -443,4 +443,4 @@ Expected: the most recent run is the one from the previous plan (Plan 2's first 
 
 **Deviations from spec**:
 - Spec §3 specified TWO custom subdomains: `auth.brigitte-le-roux.com` (Cognito Hosted UI) and `cms-api.brigitte-le-roux.com` (API Gateway). This plan adopts a **unified single-subdomain architecture** for the CMS: one CloudFront distribution at `cms.brigitte-le-roux.com` with two origins (S3 for Sveltia UI, API Gateway for `/api/*` Lambda routes). Wins: same-origin removes CORS friction, one cert, one DNS record. The CloudFront distribution itself isn't built in this plan — it lands later when there's something real to serve. ACM certs are already issued by the administrator (see Architecture section).
-- Cognito Hosted UI uses the AWS-managed prefix domain `brigitte-le-roux-website-cms.auth.<region>.amazoncognito.com` — adding a custom domain on top of Cognito would require additional config (separate cert, A record, Cognito user pool domain resource). Acceptable since Brigitte spends only the login moment on that URL; the rest of her session is on `cms.brigitte-le-roux.com`.
+- Cognito Hosted UI uses the AWS-managed prefix domain `brigitte-le-roux-website-cms.auth.<region>.amazoncognito.com` — adding a custom domain on top of Cognito would require additional config (separate cert, A record, Cognito user pool domain resource). Acceptable since the user spends only the login moment on that URL; the rest of her session is on `cms.brigitte-le-roux.com`.

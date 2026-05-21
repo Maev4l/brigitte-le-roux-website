@@ -5,13 +5,13 @@
 
 ## Problem
 
-Brigitte Le Roux (the site's subject and primary editor) is not technically
+The user (the site's subject and primary editor) is not technically
 inclined. Her authoring background is Dreamweaver: she expects to open
 something, edit content visually, click a publish button, and see the result.
 
 The current site (Astro 5 static build, deployed via `yarn deploy` from the administrator's
 laptop) requires git, Node, Yarn, AWS credentials, and editing markdown +
-YAML by hand. None of that is realistic for Brigitte. Today she cannot update
+YAML by hand. None of that is realistic for the user. Today she cannot update
 the site autonomously; every edit has to flow through the administrator.
 
 This spec describes an end-to-end editing experience that lets her log in to
@@ -26,7 +26,7 @@ no AWS knowledge on her side.
 | Editing surface | Web browser; CMS at `cms.brigitte-le-roux.com/` (Sveltia SPA hosted at `s3://brigitte-le-roux-website/cms/*`, served via a dedicated CloudFront distribution) |
 | Publish behaviour | Auto-publish — every save reaches the live site within ~1–2 min |
 | CMS | Sveltia CMS (modern, free, active fork of Decap; single static SPA, git-backed) |
-| Editor auth | AWS Cognito (User Pool, email + password). Sveltia renders its own login form and calls Cognito directly via `amazon-cognito-identity-js` (USER_SRP_AUTH). No Hosted UI redirect — Brigitte stays on `cms.brigitte-le-roux.com` end-to-end. No GitHub account for Brigitte. |
+| Editor auth | AWS Cognito (User Pool, email + password). Sveltia renders its own login form and calls Cognito directly via `amazon-cognito-identity-js` (USER_SRP_AUTH). No Hosted UI redirect — the user stays on `cms.brigitte-le-roux.com` end-to-end. No GitHub account for the user. |
 | Repo / commit identity | GitHub App owned by the administrator; installed on the repo; Lambda mints short-lived installation tokens |
 | GitHub repo visibility | Public |
 | Media (PDF / image) storage | Direct browser → S3 via presigned URL signed by a Lambda. S3 stays canonical for binaries (matches today's invariant) |
@@ -40,7 +40,7 @@ no AWS knowledge on her side.
 ## High-level architecture
 
 ```
-Brigitte's browser
+The user's browser
   │
   │ 1. opens https://cms.brigitte-le-roux.com/
   ▼
@@ -78,7 +78,7 @@ Notes on the diagram:
 
 - The file itself never passes through the media-manager Lambda. The Lambda
   only signs the URL; the browser PUTs directly to S3.
-- The github-gateway Lambda enforces the path allowlist on every commit Brigitte
+- The github-gateway Lambda enforces the path allowlist on every commit the user
   initiates. This is the *real* safety fence — CODEOWNERS only enforces
   reviews on PRs, but Sveltia commits go straight to `main`.
 - A draw.io diagram will be authored separately later in the project.
@@ -193,7 +193,7 @@ after §0) will be extended to handle this if it doesn't already.
 
 ## §2 — Content schemas mapped to Sveltia forms
 
-Brigitte sees forms, never YAML. Each Sveltia collection mirrors the Zod
+The user sees forms, never YAML. Each Sveltia collection mirrors the Zod
 schema in `packages/website/src/content/config.mjs`. Sveltia validates on
 save; if she somehow bypasses, the Zod build-time check fails and the
 deploy doesn't ship — the site never breaks.
@@ -254,7 +254,7 @@ Targets `packages/website/content/pages/publications/{fr,en}.md`.
   (repeatable `{ year, text_html }`).
 - `communications_national_title` + `communications_national` (same shape).
 
-### 5. i18n strings — NOT exposed to Brigitte
+### 5. i18n strings — NOT exposed to the user
 
 `content/i18n/{fr,en}.json` are dev-only nav labels. The administrator maintains them in
 code. The Sveltia config explicitly does not surface them.
@@ -265,7 +265,7 @@ All `text_html` fields (communications, translated_books, book_chapters)
 use a **raw HTML / plain-text widget**, not a rich editor. Reason:
 existing entries are free HTML; a rich editor would normalize whitespace
 and attribute order on save, silently mutating already-published content.
-Plain-text matches Brigitte's Dreamweaver "Code" view comfort and gives
+Plain-text matches the user's Dreamweaver "Code" view comfort and gives
 zero risk of round-trip drift.
 
 ### Year-descending sort
@@ -273,12 +273,12 @@ zero risk of round-trip drift.
 Already handled by the catch-all routes
 (`packages/website/src/pages/[...slug].astro` and
 `packages/website/src/pages/en/[...slug].astro`) — they sort `books` /
-`publications` by `year` desc at build time. Brigitte does not need to
+`publications` by `year` desc at build time. The user does not need to
 order her entries.
 
 ### Adding a new top-level route
 
-Out of scope for Brigitte. Adding a new section requires updating the
+Out of scope for the user. Adding a new section requires updating the
 header nav in `packages/website/src/components/Header.astro`, which is
 path-protected by CODEOWNERS + the Lambda allowlist. The administrator
 does this once when needed.
@@ -298,18 +298,17 @@ Terraform: `packages/infrastructure/cognito.tf`.
   role). Admin can enable later via console if needed.
 - Self-signup disabled — the administrator creates the user manually via
   the AWS console or via `aws cognito-idp admin-create-user`.
-- One App Client (public, no client secret). `ALLOW_USER_SRP_AUTH` +
-  `ALLOW_REFRESH_TOKEN_AUTH` enabled — the Sveltia plugin uses SRP for
-  the in-app login (see "Custom Sveltia backend plugin" below). OAuth
-  Authorization Code + PKCE is also configured (`callback_urls =
-  https://cms.brigitte-le-roux.com/`) as a fallback in case we ever
-  revert to Hosted UI; with the in-Sveltia approach those fields are
-  unused.
-- Hosted UI: Cognito-managed prefix domain `<prefix>.auth.<region>.amazoncognito.com`
-  is created (it costs nothing and gives us the Hosted-UI fallback) but
-  not normally surfaced to Brigitte. No custom domain on Cognito — the
-  unified-subdomain architecture means everything Brigitte sees is on
-  `cms.brigitte-le-roux.com`.
+- One App Client (public, no client secret). Only `ALLOW_USER_SRP_AUTH` +
+  `ALLOW_REFRESH_TOKEN_AUTH` enabled — Sveltia uses SRP for the in-app
+  login (see "Custom Sveltia backend plugin" below). No OAuth
+  Authorization Code / Hosted UI flow is configured; Sveltia owns the
+  full auth UX.
+- Hosted UI: NOT used. The Cognito-managed prefix domain
+  `<prefix>.auth.<region>.amazoncognito.com` is still allocated in
+  Terraform as a leftover from earlier scaffolding (costs nothing), but
+  with no OAuth flow on the App Client it has no login endpoint to
+  serve. The domain resource can be removed in a future cleanup.
+  Everything the user sees stays on `cms.brigitte-le-roux.com`.
 - Account recovery: `admin_only` — passwords are reset by the
   administrator (via console), not via self-service email. Acceptable
   for a single-editor site.
@@ -419,7 +418,7 @@ review anyway).
    `lib/allowlist.mjs`). This is the primary safety fence — see §5 / §6.
 4. Commit-author rewrite: inject the Cognito user's email into
    `author.name` + `author.email` so `git log` attributes the commit to
-   Brigitte even though the GitHub App is the committer.
+   the user even though the GitHub App is the committer.
 5. Authenticate to GitHub via Octokit + `createAppAuth`. The library mints
    a JWT signed with the App PEM, exchanges it for a 1-hour installation
    token, caches it, and refreshes automatically.
@@ -442,7 +441,7 @@ review anyway).
 
 The plugin replaces Sveltia's OAuth-redirect flow with an in-app login
 form that talks to Cognito directly via `amazon-cognito-identity-js`.
-Brigitte never sees the AWS-managed `amazoncognito.com` URL — the entire
+The user never sees the AWS-managed `amazoncognito.com` URL — the entire
 auth UX stays on `cms.brigitte-le-roux.com`.
 
 - **Login form**: HTML form (email + password) rendered when no valid
@@ -464,10 +463,10 @@ auth UX stays on `cms.brigitte-le-roux.com`.
 - **Logout**: clears `localStorage`, re-renders the login form.
 
 **No Hosted UI, no OAuth Authorization Code flow, no redirect bounce.**
-The Cognito App Client's OAuth-related fields (`callback_urls`,
-`allowed_oauth_flows`, `allowed_oauth_scopes`) configured in Plan 3 are
-unused by this plugin but kept as a fallback option in case we ever want
-to revert to the Hosted UI flow.
+The Cognito App Client has no OAuth fields configured at all — Sveltia's
+in-app SRP login is the only auth path. (The OAuth-fallback wiring
+described in earlier drafts of this spec was dropped when the in-Sveltia
+approach was committed to.)
 
 Bundle-size impact: `amazon-cognito-identity-js` adds ~150 KB gzipped
 (or ~50 KB if we use the modular `@aws-sdk/client-cognito-identity-provider`
@@ -609,12 +608,12 @@ requiring public ACLs.
 Out of scope for v1:
 
 - **Browsing/picking existing media.** Sveltia cannot list S3 contents
-  through this plugin. Brigitte either uploads new or pastes a known
+  through this plugin. The user either uploads new or pastes a known
   path. Revisit if reuse becomes painful.
 - **Deleting media.** No DELETE endpoint is exposed by the
   media-manager. Replacing an existing file is supported (PUT to the
   same key overwrites + invalidates CloudFront). Removing a file's
-  link from a page is supported (Brigitte clears the field via the
+  link from a page is supported (the user clears the field via the
   github-gateway commit — the S3 object becomes orphaned but no longer
   reachable from any page). Hard deletion of the underlying S3 object
   is administrator-only via the AWS console — expected to be rare
@@ -651,7 +650,7 @@ infrastructure are deployed locally by the administrator.
   Actions failure.
 - Failure comment: a final step that runs only on failure posts a French
   commit comment ("Une erreur empêche la mise en ligne — l'administrateur a été notifié.")
-  so Brigitte sees something in Sveltia.
+  so the user sees something in Sveltia.
 
 ### OIDC role
 
@@ -713,7 +712,7 @@ Defence in depth:
 
 ## §6 — Onboarding, runbooks, failure modes
 
-### Brigitte's onboarding (one-time)
+### the user's onboarding (one-time)
 
 - The administrator creates her Cognito user in the AWS console. Cognito emails her a
   link to set her own password.
@@ -732,7 +731,7 @@ Defence in depth:
 - `rotate-github-app-key.md` — quarterly: regenerate the GitHub App
   private key, update the SSM parameter, force a Lambda redeploy so a
   fresh process reads the new key at cold start.
-- `recover-from-build-failure.md` — for when Brigitte's edit makes
+- `recover-from-build-failure.md` — for when the user's edit makes
   `yarn build` fail. Read Actions log, identify Zod error, decide between
   fix-forward (edit the file directly) or `git revert <commit>` then push.
 - `add-a-second-editor.md` — if another editor ever joins: create another
@@ -743,7 +742,7 @@ Defence in depth:
 
 ### Failure modes summary
 
-| Failure | Brigitte sees | Site impact | Detection |
+| Failure | the user sees | Site impact | Detection |
 | --- | --- | --- | --- |
 | Cognito down | Can't log in | None — site still served from CloudFront | AWS Health Dashboard |
 | github-gateway 5xx | "Save failed" toast | None | CloudWatch alarm → SNS → administrator email |
@@ -751,7 +750,7 @@ Defence in depth:
 | Invalid YAML / Zod | "Saved", then GitHub Actions fails | None — last good version stays | GA failure email; commit comment in French |
 | Lambda path-allowlist 403 | "Save failed" | None | CloudWatch log |
 | S3 sync partial | Possibly partial site | Mitigated by put-then-delete order | GA failure email |
-| Brigitte deletes a key page | Page 404 | Real impact | `git revert` recipe |
+| the user deletes a key page | Page 404 | Real impact | `git revert` recipe |
 | App key leak | 1 h window for attacker | Path allowlist limits damage | Insights audit + rotation |
 
 ### CloudWatch alarms
@@ -777,7 +776,7 @@ Defence in depth:
 
 1. Image optimization at build time once image sizes warrant.
 2. Sveltia version pinning + review of the changelog before any bump.
-3. Make Cognito MFA required once Brigitte is comfortable with the login
+3. Make Cognito MFA required once the user is comfortable with the login
    flow.
 4. Backup posture: S3 versioning currently off. Enable when accidental
    overwrites become a risk.
@@ -793,8 +792,7 @@ Suggested phasing (the actual implementation plan will refine this):
    the public GitHub remote, push.
 2. **Cognito + API Gateway + SSM scaffolding** — Terraform only, no
    Lambda code yet. Verify Cognito User Pool with a dummy user via the
-   SRP login that Sveltia will use (or via the Cognito-managed Hosted UI
-   as a quick sanity check).
+   SRP login that Sveltia will use.
 3. **github-gateway Lambda** — including the GitHub App, path allowlist,
    commit-author rewrite. End-to-end: dummy Sveltia config commits a
    text file via the gateway.
@@ -805,8 +803,8 @@ Suggested phasing (the actual implementation plan will refine this):
 6. **GitHub Actions deploy-website workflow** — OIDC role, deploy.
 7. **CODEOWNERS + branch protection** — wired up after the workflow is
    stable.
-8. **Onboarding** — French guide, screencast, walkthrough with Brigitte.
-9. **Cutover** — remove the manual `yarn deploy` from the administrator's habit; Brigitte
+8. **Onboarding** — French guide, screencast, walkthrough with the user.
+9. **Cutover** — remove the manual `yarn deploy` from the administrator's habit; the user
    editing autonomously.
 
 Each step has its own verification gate; the existing manual `yarn deploy`

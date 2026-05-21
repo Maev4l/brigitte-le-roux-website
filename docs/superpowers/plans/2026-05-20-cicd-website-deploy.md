@@ -308,7 +308,7 @@ jobs:
             --output text > /dev/null
 
       # If the deploy failed and was triggered by a push (not workflow_dispatch),
-      # leave a French commit-comment so Brigitte (editing via the CMS, when
+      # leave a French commit-comment so the user (editing via the CMS, when
       # that ships) sees something in the Sveltia commit list.
       - name: Comment on commit on failure
         if: failure() && github.event_name == 'push'
@@ -395,7 +395,7 @@ ci: add GitHub Actions website-deploy workflow + IAM OIDC role
   Trigger on push to main when packages/website/** changes (and on manual
   workflow_dispatch). Build the Astro site, sync to S3 excluding binary
   prefixes (pdfs/data/img stay canonical in S3), invalidate CloudFront.
-  On push-triggered failure, post a French commit comment so Brigitte sees
+  On push-triggered failure, post a French commit comment so the user sees
   something when CMS work lands.
 
 Trust policy permits `cms` ref temporarily so we can smoke-test via

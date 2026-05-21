@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the `github-gateway` Lambda — the authenticated proxy between Sveltia and GitHub. Sveltia sends GitHub-API-shaped requests with a Cognito Bearer token; this Lambda validates the JWT (via API Gateway's JWT authorizer, set up here for the first time), enforces a path allowlist, rewrites the commit author to Brigitte's email, mints a short-lived GitHub App installation token, forwards the request to `api.github.com`, and streams the response back.
+**Goal:** Build the `github-gateway` Lambda — the authenticated proxy between Sveltia and GitHub. Sveltia sends GitHub-API-shaped requests with a Cognito Bearer token; this Lambda validates the JWT (via API Gateway's JWT authorizer, set up here for the first time), enforces a path allowlist, rewrites the commit author to the user's email, mints a short-lived GitHub App installation token, forwards the request to `api.github.com`, and streams the response back.
 
-By the end of this plan, you can `curl` an authenticated request through API Gateway → Lambda → GitHub and see a real commit land in the repo on Brigitte's behalf. Sveltia integration itself comes in Plan 6.
+By the end of this plan, you can `curl` an authenticated request through API Gateway → Lambda → GitHub and see a real commit land in the repo on the user's behalf. Sveltia integration itself comes in Plan 6.
 
 **Architecture:**
 

@@ -43,7 +43,7 @@ site without per-page work.
 - `keywords` — page-specific comma-separated keywords.
 
 **Computed in the frontmatter script:**
-- `fullTitle = ${title} — Brigitte Le Roux` (same form as today's `<title>`).
+- `fullTitle = ${title} — the user` (same form as today's `<title>`).
 - `metaDescription = description || strings.site.description` (per-locale fallback).
 - `metaKeywords = keywords || strings.site.keywords` (per-locale fallback).
 - `canonical = new URL(Astro.url.pathname, Astro.site).href`.
@@ -61,7 +61,7 @@ site without per-page work.
 ```html
 <meta name="description" content={metaDescription} />
 <meta name="keywords" content={metaKeywords} />
-<meta name="author" content="Brigitte Le Roux" />
+<meta name="author" content="the user" />
 <link rel="canonical" href={canonical} />
 
 {frExists && <link rel="alternate" hreflang="fr" href={frUrl} />}
@@ -74,7 +74,7 @@ site without per-page work.
 <meta property="og:type" content="website" />
 <meta property="og:locale" content={locale === 'en' ? 'en_US' : 'fr_FR'} />
 <meta property="og:image" content={ogImage} />
-<meta property="og:site_name" content="Brigitte Le Roux" />
+<meta property="og:site_name" content="the user" />
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={fullTitle} />
@@ -156,8 +156,8 @@ legacy site's keyword inventory and rewritten as natural-language descriptions.
 ```json
 {
   "site": {
-    "description": "Site personnel de Brigitte Le Roux, chercheuse en analyse géométrique des données (MAP5, Université Paris Cité ; CEVIPOF/CNRS).",
-    "keywords": "Brigitte Le Roux, analyse géométrique des données, analyse des correspondances multiples, ACM, AGD, statistique appliquée, MAP5, CEVIPOF, sociologie quantitative"
+    "description": "Site personnel de the user, chercheuse en analyse géométrique des données (MAP5, Université Paris Cité ; CEVIPOF/CNRS).",
+    "keywords": "the user, analyse géométrique des données, analyse des correspondances multiples, ACM, AGD, statistique appliquée, MAP5, CEVIPOF, sociologie quantitative"
   }
 }
 ```
@@ -167,8 +167,8 @@ legacy site's keyword inventory and rewritten as natural-language descriptions.
 ```json
 {
   "site": {
-    "description": "Personal academic site of Brigitte Le Roux, researcher in Geometric Data Analysis (MAP5, Université Paris Cité; CEVIPOF/CNRS).",
-    "keywords": "Brigitte Le Roux, Geometric Data Analysis, Multiple Correspondence Analysis, MCA, GDA, applied statistics, MAP5, CEVIPOF, quantitative sociology, case studies"
+    "description": "Personal academic site of the user, researcher in Geometric Data Analysis (MAP5, Université Paris Cité; CEVIPOF/CNRS).",
+    "keywords": "the user, Geometric Data Analysis, Multiple Correspondence Analysis, MCA, GDA, applied statistics, MAP5, CEVIPOF, quantitative sociology, case studies"
   }
 }
 ```

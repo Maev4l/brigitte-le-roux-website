@@ -4,7 +4,7 @@
 
 ## Background
 
-Brigitte Le Roux is a researcher in mathematics (Geometric Data Analysis, Multiple
+The user is a researcher in mathematics (Geometric Data Analysis, Multiple
 Correspondence Analysis) affiliated with MAP5 (Université Paris Cité) and CEVIPOF/CNRS.
 The legacy site at `https://helios2.mi.parisdescartes.fr/~lerb/` is a bilingual (FR/EN)
 static HTML site. This repo is its modernization, deployed at
