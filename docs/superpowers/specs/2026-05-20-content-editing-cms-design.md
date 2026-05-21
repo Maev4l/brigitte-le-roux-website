@@ -33,7 +33,7 @@ no AWS knowledge on her side.
 | CI/CD scope | GitHub Actions deploys the website only. Functions + infrastructure are deployed locally by the administrator (`yarn backend:deploy`, `yarn infra:apply`) |
 | Secret storage | SSM Parameter Store SecureString (default AWS-managed KMS). Lambda fetches at cold-start, caches in module scope |
 | Lambda language | Node.js 22 (ESM, plain JavaScript, no TypeScript). ZIP package on AWS-managed Node 22 runtime, arm64/Graviton |
-| Lambda naming | Deployed AWS Lambda function names prefixed `brigitte-le-roux-website-*` (e.g. `brigitte-le-roux-website-github-gateway`, `brigitte-le-roux-website-media-uploader`). Local folder names stay short (no prefix). |
+| Lambda naming | Deployed AWS Lambda function names prefixed `brigitte-le-roux-website-*` (e.g. `brigitte-le-roux-website-github-gateway`, `brigitte-le-roux-website-media-manager`). Local folder names stay short (no prefix). |
 | Monorepo layout | `packages/website/`, `packages/infrastructure/` (flat), `packages/functions/` (created later when CMS work starts). No Yarn workspaces — root `package.json` only carries scripts |
 | `text_html` fields (communications / book chapters / translated books) | Raw HTML / plain-text widget (no rich editor) to avoid round-trip drift on existing entries |
 
@@ -53,7 +53,7 @@ Sveltia CMS (static SPA, served by CloudFront from S3 admin/ origin)
 API Gateway HTTP API + JWT authorizer (Cognito)
   │                                        │
   ▼                                        ▼
-Lambda: github-gateway                  Lambda: media-uploader
+Lambda: github-gateway                  Lambda: media-manager
   - reads JWT claims                       - reads JWT claims
   - path allowlist                         - validates name/type/size
   - rewrites commit author                 - signs S3 PUT URL
@@ -76,7 +76,7 @@ CloudFront ─── public visitors
 
 Notes on the diagram:
 
-- The file itself never passes through the media-uploader Lambda. The Lambda
+- The file itself never passes through the media-manager Lambda. The Lambda
   only signs the URL; the browser PUTs directly to S3.
 - The github-gateway Lambda enforces the path allowlist on every commit Brigitte
   initiates. This is the *real* safety fence — CODEOWNERS only enforces
@@ -106,7 +106,7 @@ brigitte-leroux-website/
 │   └── functions/              ← created later, when CMS work starts
 │       ├── Makefile            ← orchestrates build / package for all functions
 │       ├── github-gateway/        ← ZIP-packaged Lambda, Node 22 ESM
-│       └── media-uploader/     ← ZIP-packaged Lambda, Node 22 ESM
+│       └── media-manager/     ← ZIP-packaged Lambda, Node 22 ESM
 ├── docs/                       ← stays at root
 ├── .github/workflows/          ← stays at root (single workflow for website deploy)
 ├── CLAUDE.md                   ← revised (drop "no workspaces", document new layout)
@@ -181,7 +181,7 @@ Files in the website package:
 - `packages/website/public/cms/sveltia-cognito-backend.js` — custom
   backend plugin (~80 lines) that wires Sveltia to Cognito + our github-gateway.
 - `packages/website/public/cms/sveltia-s3-media.js` — custom media library
-  plugin (~150 lines) that wires "Upload file" to our media-uploader.
+  plugin (~150 lines) that wires "Upload file" to our media-manager.
 
 Both JS files are committed into the website repo (they are part of the
 deployable artefact, not gitignored).
@@ -329,7 +329,7 @@ bundled with the first Lambda's trigger (Plan 4). No standalone
   routes that require authentication.
 - Routes (added when each Lambda trigger is wired up):
   - `POST/PUT/GET/DELETE /api/git/{proxy+}` → integrates with the `github-gateway` Lambda
-  - `POST /api/media/upload-url` → integrates with the `media-uploader` Lambda
+  - `POST /api/media/upload-url` → integrates with the `media-manager` Lambda
 - CORS configured by the module for `https://cms.brigitte-le-roux.com`
   (defensive — end-state is same-origin via CloudFront, so CORS preflight
   rarely fires).
@@ -483,11 +483,11 @@ plugin just surfaces the error).
 Sveltia `config.yml` references this plugin and points `backend.api_root`
 to our API Gateway domain. `backend.repo` is `Maev4l/brigitte-le-roux-website`.
 
-## §4 — Media uploader Lambda + S3 CORS
+## §4 — Media manager Lambda + S3 CORS
 
-### media-uploader Lambda
+### media-manager Lambda
 
-Location: `packages/functions/media-uploader/`.
+Location: `packages/functions/media-manager/`.
 
 - Same packaging conventions as github-gateway (ZIP, AWS-managed Node.js 22
   runtime, arm64/Graviton, Maev4l/terraform-modules Lambda ZIP module).
@@ -612,7 +612,7 @@ Out of scope for v1:
   through this plugin. Brigitte either uploads new or pastes a known
   path. Revisit if reuse becomes painful.
 - **Deleting media.** No DELETE endpoint is exposed by the
-  media-uploader. Replacing an existing file is supported (PUT to the
+  media-manager. Replacing an existing file is supported (PUT to the
   same key overwrites + invalidates CloudFront). Removing a file's
   link from a page is supported (Brigitte clears the field via the
   github-gateway commit — the S3 object becomes orphaned but no longer
@@ -681,7 +681,7 @@ Infrastructure-only changes:
 - `yarn infra:plan` / `yarn infra:apply` directly.
 
 The Makefile orchestrator at `packages/functions/Makefile` exposes
-per-function targets (`build-github-gateway`, `build-media-uploader`) for
+per-function targets (`build-github-gateway`, `build-media-manager`) for
 when only one function changed, but the root `package.json` only carries
 the "all functions" forms.
 
@@ -747,7 +747,7 @@ Defence in depth:
 | --- | --- | --- | --- |
 | Cognito down | Can't log in | None — site still served from CloudFront | AWS Health Dashboard |
 | github-gateway 5xx | "Save failed" toast | None | CloudWatch alarm → SNS → administrator email |
-| media-uploader 5xx | "Upload failed" | None | CloudWatch alarm → SNS → administrator email |
+| media-manager 5xx | "Upload failed" | None | CloudWatch alarm → SNS → administrator email |
 | Invalid YAML / Zod | "Saved", then GitHub Actions fails | None — last good version stays | GA failure email; commit comment in French |
 | Lambda path-allowlist 403 | "Save failed" | None | CloudWatch log |
 | S3 sync partial | Possibly partial site | Mitigated by put-then-delete order | GA failure email |
@@ -798,7 +798,7 @@ Suggested phasing (the actual implementation plan will refine this):
 3. **github-gateway Lambda** — including the GitHub App, path allowlist,
    commit-author rewrite. End-to-end: dummy Sveltia config commits a
    text file via the gateway.
-4. **media-uploader Lambda** + S3 CORS. End-to-end: dummy Sveltia config
+4. **media-manager Lambda** + S3 CORS. End-to-end: dummy Sveltia config
    uploads a PDF to S3.
 5. **Sveltia config + custom plugins** — full collection definitions per
    §2. End-to-end with both Lambdas wired in.

@@ -46,7 +46,8 @@ GitHub Actions deploy-website workflow (already wired in Plan 2)
 ## Preconditions
 
 - On `main`, working tree clean.
-- Plan 3 has been applied: Cognito User Pool `brigitte-le-roux-website-cms` exists with a confirmed test user `nobody@nowhere.com` (`Zorglub96*`).
+- Plan 3 has been applied: Cognito User Pool `brigitte-le-roux-website-cms` exists with a confirmed test user. Before Task 8, export the credentials in your shell:
+  `export TEST_USER_EMAIL=...; export TEST_USER_PASSWORD=...` (values held outside the repo).
 - Dev role has Lambda + API Gateway + SSM IAM permissions (Task 1 probes).
 - `gh` CLI authenticated as `Maev4l` with `repo` scope.
 
@@ -822,7 +823,7 @@ Then authenticate:
 TOKEN=$(aws cognito-idp initiate-auth \
   --client-id "$APP_CLIENT_ID" \
   --auth-flow USER_PASSWORD_AUTH \
-  --auth-parameters USERNAME=nobody@nowhere.com,PASSWORD='Zorglub96*' \
+  --auth-parameters USERNAME="$TEST_USER_EMAIL",PASSWORD="$TEST_USER_PASSWORD" \
   --query 'AuthenticationResult.IdToken' \
   --output text)
 
@@ -875,7 +876,7 @@ Expected: response shows a commit object (status 201). The commit lands on `main
 Verify on GitHub: `gh api repos/Maev4l/brigitte-le-roux-website/commits/main --jq '.commit.author' && gh api repos/Maev4l/brigitte-le-roux-website/commits/main --jq '.commit.message'`
 
 Expected:
-- `commit.author.email == "nobody@nowhere.com"` (the email-claim rewrite worked)
+- `commit.author.email` equals `$TEST_USER_EMAIL` (the email-claim rewrite worked)
 - `commit.message == "smoke: plan-4 github-gateway test"`
 
 - [ ] **Step 4: Clean up: delete the smoke-test file via the gateway**
