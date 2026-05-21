@@ -153,32 +153,50 @@ After install, you land on the install settings page. The URL is `https://github
 
 The PEM file from Task 2 Step 2 goes into SSM as a `SecureString`. The Lambda reads it at cold start via `ssm:GetParameter` with `WithDecryption=true`.
 
-- [ ] **Step 1: Upload the PEM**
+All three credentials (App ID, Installation ID, private key) go into a
+**single SSM SecureString** as JSON. Keeps the Lambda's cold-start path
+to one SSM call, and the IDs benefit from the same encryption/IAM scope
+as the PEM.
 
-Replace `<path-to-pem>` with the local path where you downloaded the file in Task 2 Step 2:
+- [ ] **Step 1: Build the JSON and upload**
+
+Replace `<path-to-pem>`, `<APP_ID>`, and `<INSTALLATION_ID>` with the
+values from Task 2.
 
 ```bash
+PEM=$(cat <path-to-pem>)
+JSON=$(jq -n \
+  --arg app_id "<APP_ID>" \
+  --arg installation_id "<INSTALLATION_ID>" \
+  --arg private_key "$PEM" \
+  '{app_id: $app_id, installation_id: $installation_id, private_key: $private_key}')
+
 aws ssm put-parameter \
-  --name "brigitte-le-roux-website.github-app-private-key" \
+  --name "brigitte-le-roux-website.github-app-secrets" \
   --type "SecureString" \
-  --description "GitHub App private key (PEM). Read at Lambda cold start by github-gateway." \
-  --value "$(cat <path-to-pem>)"
+  --description "GitHub App credentials JSON: { app_id, installation_id, private_key }. Read by the github-gateway Lambda at cold start." \
+  --value "$JSON"
 ```
 
-Expected: returns `{"Version": 1, "Tier": "Standard"}`.
+Expected: returns `{"Version": 1, "Tier": "Standard"}`. The JSON should
+be ~1800 chars — well under the 4 KB Standard-tier limit.
 
-If the dev role lacks `ssm:PutParameter`, fall back to the AWS console: Systems Manager → Parameter Store → Create parameter (Name: `brigitte-le-roux-website.github-app-private-key`, Type: SecureString, KMS key: alias/aws/ssm, Value: paste PEM contents).
+If the dev role lacks `ssm:PutParameter`, fall back to the AWS console:
+Systems Manager → Parameter Store → Create parameter
+(Name: `brigitte-le-roux-website.github-app-secrets`, Type: SecureString,
+KMS key: alias/aws/ssm, Value: paste the JSON object as a single line).
 
 - [ ] **Step 2: Verify the parameter exists**
 
 ```bash
 aws ssm get-parameter \
-  --name "brigitte-le-roux-website.github-app-private-key" \
+  --name "brigitte-le-roux-website.github-app-secrets" \
   --with-decryption \
   --query 'Parameter.{Name:Name,Type:Type,Length:length(Value)}'
 ```
 
-Expected: shows the parameter with a Length around 1700 (the PEM is ~1700 chars). DO NOT print the full Value — it's a private key.
+Expected: shows the parameter with a Length around 1800. **DO NOT print
+the full Value** — it contains the PEM.
 
 - [ ] **Step 3: Securely delete the local PEM file**
 
@@ -213,7 +231,8 @@ The PEM is no longer needed anywhere on disk. If it leaks, regenerate it on the 
   "description": "Cognito-authenticated proxy from Sveltia to GitHub via a GitHub App",
   "main": "index.mjs",
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build": "esbuild index.mjs --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --external:@aws-sdk/* --banner:js=\"import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);\""
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "3.687.0",
@@ -221,12 +240,17 @@ The PEM is no longer needed anywhere on disk. If it leaks, regenerate it on the 
     "@octokit/rest": "21.0.2"
   },
   "devDependencies": {
+    "@eslint/js": "9.15.0",
+    "esbuild": "0.24.0",
     "eslint": "9.15.0"
   }
 }
 ```
 
 Strict-pinned versions per the project's global convention (no `^`, no `~`).
+`@aws-sdk/*` is bundled-out via esbuild's `--external` flag (provided by
+the Lambda runtime); the `banner:js` shim lets bundled CJS deps still
+call `require` from within the ESM output.
 
 - [ ] **Step 2: Create `packages/functions/github-gateway/eslint.config.js`**
 
@@ -330,10 +354,11 @@ export const injectCommitAuthor = (body, email) => {
 - [ ] **Step 5: Create `packages/functions/github-gateway/lib/octokit.mjs`**
 
 ```js
-// Octokit client factory. The GitHub App private key is loaded from SSM at
-// module load (cold start) and cached for the container lifetime. Octokit's
-// auth-app strategy handles the JWT-mint + installation-token-exchange dance
-// and silently refreshes the installation token (1h TTL).
+// Octokit client factory. All GitHub App credentials (app_id,
+// installation_id, private_key) come from a single SSM SecureString
+// parameter containing JSON. Loaded at module load (Lambda cold start),
+// cached for the container lifetime. Octokit's auth-app strategy handles
+// JWT minting + 1h installation-token refresh transparently.
 
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { Octokit } from '@octokit/rest';
@@ -343,25 +368,25 @@ const ssm = new SSMClient({});
 
 let cachedOctokit = null;
 
-const loadPrivateKey = async () => {
+const loadAppSecrets = async () => {
   const result = await ssm.send(
     new GetParameterCommand({
-      Name: process.env.GITHUB_APP_PRIVATE_KEY_PARAM,
+      Name: process.env.GITHUB_APP_SECRETS_PARAM,
       WithDecryption: true,
     }),
   );
-  return result.Parameter.Value;
+  return JSON.parse(result.Parameter.Value);
 };
 
 export const getOctokit = async () => {
   if (cachedOctokit) return cachedOctokit;
-  const privateKey = await loadPrivateKey();
+  const { app_id, installation_id, private_key } = await loadAppSecrets();
   cachedOctokit = new Octokit({
     authStrategy: createAppAuth,
     auth: {
-      appId: process.env.GITHUB_APP_ID,
-      privateKey,
-      installationId: process.env.GITHUB_APP_INSTALLATION_ID,
+      appId: app_id,
+      privateKey: private_key,
+      installationId: installation_id,
     },
   });
   return cachedOctokit;
@@ -515,36 +540,37 @@ Expected: no errors. If lint complains, fix the source.
 - [ ] **Step 1: Create `packages/functions/Makefile`**
 
 ```makefile
-# Orchestrates ZIP packaging for all Lambda functions in this monorepo.
-# Each subdirectory in this folder that contains a package.json is treated
-# as a function. The package step installs production deps + zips the
-# whole tree into dist/<function-name>.zip.
+# Orchestrates esbuild bundling + ZIP packaging for every Lambda function
+# in this monorepo. Each subdirectory that contains a package.json is
+# treated as a function:
+#
+#   1. yarn install --frozen-lockfile  (gets esbuild + deps)
+#   2. yarn build                       (esbuild → dist/index.mjs)
+#   3. zip dist/<name>.zip with index.mjs at the ZIP root
+#
+# Lambda's runtime then sees a single index.mjs file and the handler
+# resolves as `index.handler`.
 
 FUNCTIONS := $(notdir $(patsubst %/package.json,%,$(wildcard */package.json)))
 
-.PHONY: build $(addprefix build-,$(FUNCTIONS)) clean
+.PHONY: build clean
 
-build: $(addprefix build-,$(FUNCTIONS))
-
-build-%:
-	@echo "→ Building $*"
-	@cd $* && yarn install --frozen-lockfile --production --modules-folder node_modules
-	@cd $* && rm -rf dist && mkdir -p dist
-	@cd $* && zip -rq dist/$*.zip . \
-		-x "dist/*" \
-		-x ".git/*" \
-		-x "*.md" \
-		-x "eslint.config.js" \
-		-x "node_modules/.cache/*" \
-		-x ".eslintrc*"
-	@echo "✓ packages/functions/$*/dist/$*.zip ($$(du -h $*/dist/$*.zip | cut -f1))"
-	@# Restore dev deps for local development
-	@cd $* && yarn install --frozen-lockfile
+build:
+	@set -e; for fn in $(FUNCTIONS); do \
+		echo "→ Building $$fn"; \
+		( cd $$fn && yarn install --frozen-lockfile >/dev/null && yarn build >/dev/null ); \
+		( cd $$fn/dist && rm -f $$fn.zip && zip -q $$fn.zip index.mjs ); \
+		echo "✓ packages/functions/$$fn/dist/$$fn.zip ($$(du -h $$fn/dist/$$fn.zip | cut -f1))"; \
+	done
 
 clean:
 	@rm -rf */dist
 	@echo "✓ cleaned"
 ```
+
+The ZIP contains just one file: `dist/index.mjs` (the esbuild bundle) at
+the ZIP root. Lambda's handler is `index.handler` — the runtime
+auto-detects ESM via the `.mjs` extension.
 
 - [ ] **Step 2: Add root scripts to `package.json`**
 
@@ -596,18 +622,18 @@ Verify: `ls -lh packages/functions/github-gateway/dist/`.
 ```hcl
 # ---------------------------------------------------------------------------
 # CMS Lambdas + their API Gateway triggers.
-# Uses Maev4l/terraform-modules for both the function resource and the
-# HTTP API + JWT authorizer + integrations.
+# Uses Maev4l/terraform-modules for both the Lambda function and the
+# HTTP API + JWT authorizer + integrations + routes (bundled).
 # ---------------------------------------------------------------------------
 
-# Where each function's ZIP lives, relative to packages/infrastructure/.
 locals {
-  githubGatewayZip = "../functions/github-gateway/dist/github-gateway.zip"
+  githubGatewayZip    = "../functions/github-gateway/dist/github-gateway.zip"
+  githubGatewayBundle = "../functions/github-gateway/dist/index.mjs"
 }
 
 # The github-gateway Lambda. Proxies Cognito-authenticated requests from
 # Sveltia to api.github.com, enforcing path allowlist and commit-author
-# rewrite.
+# rewrite. esbuild-bundled with @aws-sdk/* externalized (runtime-provided).
 module "github_gateway" {
   source = "github.com/Maev4l/terraform-modules//modules/lambda-function?ref=v1.7.1"
 
@@ -618,29 +644,32 @@ module "github_gateway" {
 
   additional_policy_arns = [aws_iam_policy.github_gateway.arn]
 
+  # `hash` is fed to source_code_hash; we hash the BUNDLED OUTPUT (the
+  # esbuild-produced index.mjs) rather than the ZIP, because ZIP packaging
+  # is non-deterministic (mtimes, file ordering) and would trigger spurious
+  # Lambda updates on every apply.
   zip = {
     filename = local.githubGatewayZip
     runtime  = "nodejs22.x"
     handler  = "index.handler"
-    hash     = filebase64sha256(local.githubGatewayZip)
+    hash     = filebase64sha256(local.githubGatewayBundle)
   }
 
   environment_variables = {
-    ALLOWED_REPO                   = "Maev4l/brigitte-le-roux-website"
-    GITHUB_APP_ID                  = var.github_app_id
-    GITHUB_APP_INSTALLATION_ID     = var.github_app_installation_id
-    GITHUB_APP_PRIVATE_KEY_PARAM   = "brigitte-le-roux-website.github-app-private-key"
+    ALLOWED_REPO             = "Maev4l/brigitte-le-roux-website"
+    GITHUB_APP_SECRETS_PARAM = "brigitte-le-roux-website.github-app-secrets"
   }
 }
 
-# IAM policy: read the GitHub App PEM from SSM, decrypt via the default
-# AWS-managed KMS key. Logs perms are added by the lambda-function module.
+# IAM policy: read the single GitHub App secrets JSON from SSM
+# (SecureString), decrypt via the default AWS-managed KMS key. Logs perms
+# are added by the lambda-function module.
 data "aws_iam_policy_document" "github_gateway" {
   statement {
-    effect    = "Allow"
-    actions   = ["ssm:GetParameter"]
+    effect  = "Allow"
+    actions = ["ssm:GetParameter"]
     resources = [
-      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/brigitte-le-roux-website.github-app-private-key",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/brigitte-le-roux-website.github-app-secrets",
     ]
   }
   statement {
@@ -652,28 +681,33 @@ data "aws_iam_policy_document" "github_gateway" {
 
 resource "aws_iam_policy" "github_gateway" {
   name        = "brigitte-le-roux-website-github-gateway"
-  description = "github-gateway Lambda: read GitHub App PEM from SSM"
+  description = "github-gateway Lambda: read GitHub App credentials JSON from SSM SecureString"
   policy      = data.aws_iam_policy_document.github_gateway.json
 }
 
-# HTTP API + JWT authorizer + routes + integrations — all bundled by the
-# module. Subsequent Lambdas (Plan 5 media-uploader) add their own
-# `integrations` entry to a SHARED module instance? No — this module
-# creates an API per instantiation, so additional Lambdas would either:
-#   (a) instantiate this module ONCE with all routes baked in (current shape)
-#   (b) use the same api_name across module instances if the module supports
-#       attaching to an existing API.
-# For Plan 4 we only have one Lambda; Plan 5 will revisit the structure.
+# HTTP API + JWT authorizer + integration + route — all bundled by the
+# module. A future Plan 5 media-uploader Lambda will be added as another
+# entry in the `integrations` map (single module instance, shared HTTP API).
 module "github_gateway_trigger" {
   source = "github.com/Maev4l/terraform-modules//modules/lambda-trigger-apigw?ref=v1.7.1"
 
   api_name = "brigitte-le-roux-website-cms"
 
-  cors                         = true
-  cors_allow_origins           = ["https://cms.brigitte-le-roux.com"]
-  cors_allow_methods           = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"]
-  cors_allow_headers           = ["authorization", "content-type"]
+  # disable_execute_api_endpoint defaults to true (forces traffic through a
+  # custom domain). We don't have a custom domain on the API Gateway in
+  # Plan 4 — the unified cms.brigitte-le-roux.com CloudFront distribution
+  # comes later — so allow the execute-api URL for now to enable smoke
+  # testing.
   disable_execute_api_endpoint = false
+
+  cors = {
+    allow_origins     = ["https://cms.brigitte-le-roux.com"]
+    allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"]
+    allow_headers     = ["authorization", "content-type"]
+    expose_headers    = ["etag"]
+    max_age           = 3600
+    allow_credentials = false
+  }
 
   authorizer = {
     name     = "cognito-jwt"
@@ -699,38 +733,27 @@ output "cms_api_endpoint" {
 }
 ```
 
-⚠️ **Module-interface assumption**: I've assumed the `lambda-trigger-apigw` module exposes outputs like `api_endpoint`, and accepts CORS attributes via `cors_allow_*` fields. The exact field names depend on the v1.7.1 module — confirm by reading the module source (`gh api repos/Maev4l/terraform-modules/contents/modules/lambda-trigger-apigw/variables.tf?ref=v1.7.1 --jq .content | base64 -d`) and adjust the HCL above if any field name differs. If the field shape diverges substantially, treat this as the module's contract and conform to it; do not work around with raw `aws_apigatewayv2_*` resources.
+Module v1.7.1 interface confirmed during execution:
+- `lambda-function`: inputs `function_name`, `architecture`, `memory_size`,
+  `timeout`, `additional_policy_arns`, `zip = { filename, runtime, handler, hash }`,
+  `environment_variables`. Outputs: `function_name`, `function_arn`,
+  `invoke_arn`, `role_name`, `role_arn`, `log_group_name`.
+- `lambda-trigger-apigw`: inputs `api_name`, `integrations` (map of objects),
+  `cors` (null/true/false/object), `authorizer` (object), `stage_name`,
+  `custom_domain`, `disable_execute_api_endpoint`. Outputs: `api_id`,
+  `api_endpoint`, `execution_arn`, `stage_id`, `authorizer_id`,
+  `integration_ids`. **Important defaults**: `disable_execute_api_endpoint = true`
+  by default — must set to `false` if you want the default execute-api
+  URL reachable.
 
-- [ ] **Step 2: Add the new variables to `packages/infrastructure/variables.tf`**
+No Terraform variables needed for the GitHub App credentials — the App ID,
+Installation ID, and PEM are all in the single SSM SecureString that the
+Lambda reads at cold start (see Task 3). No `terraform.tfvars` to create.
 
-Append to the existing file:
-
-```hcl
-variable "github_app_id" {
-  description = "GitHub App ID (from Task 2 Step 3 of Plan 4)"
-  type        = string
-}
-
-variable "github_app_installation_id" {
-  description = "GitHub App installation ID on Maev4l/brigitte-le-roux-website (from Task 2 Step 5 of Plan 4)"
-  type        = string
-}
-```
-
-- [ ] **Step 3: Create `packages/infrastructure/terraform.tfvars` (gitignored)**
-
-This file holds the secret-ish values (App ID + Install ID). Already gitignored via the existing `infrastructure/terraform.tfvars` line in `.gitignore`.
-
-```hcl
-github_app_id              = "<APP_ID_FROM_TASK_2_STEP_3>"
-github_app_installation_id = "<INSTALLATION_ID_FROM_TASK_2_STEP_5>"
-```
-
-Replace both placeholders with the actual IDs.
-
-- [ ] **Step 4: Format + validate**
+- [ ] **Step 2: Format + validate**
 
 ```bash
+terraform -chdir=packages/infrastructure init   # downloads the modules first time
 terraform -chdir=packages/infrastructure fmt
 terraform -chdir=packages/infrastructure validate
 ```
@@ -940,13 +963,17 @@ App. Plain JS ESM, Node 22, ZIP-packaged on arm64.
 
 - packages/functions/github-gateway/lib/
   Helpers split for testability: allowlist.mjs, commit-author.mjs,
-  octokit.mjs (SSM PEM fetch + Octokit App auth, module-load cache).
+  octokit.mjs (single-JSON SSM SecureString fetch + Octokit App auth,
+  module-load cache).
 
 - packages/functions/github-gateway/package.json
   Strict-pinned deps: @octokit/rest, @octokit/auth-app, @aws-sdk/client-ssm.
+  Build script uses esbuild to bundle index.mjs → dist/index.mjs with
+  @aws-sdk/* externalized (Lambda runtime-provided).
 
 - packages/functions/Makefile
-  Orchestrator: `make build` zips every function under packages/functions/.
+  Orchestrator: `make build` runs `yarn build` (esbuild) for every
+  function and zips the bundled dist/index.mjs into dist/<name>.zip.
   Used by root `yarn backend:build` and `yarn backend:deploy`.
 
 - package.json (root)
@@ -967,7 +994,9 @@ git add packages/infrastructure/functions.tf packages/infrastructure/variables.t
 git status --short
 ```
 
-Expected: lists `functions.tf` (new) and `variables.tf` (modified). NOT `terraform.tfvars` (gitignored).
+Expected: lists `functions.tf` (new) and `variables.tf` (modified — only
+to add the explanatory comment about credentials living in SSM, not as
+Terraform variables).
 
 Commit:
 ```bash
@@ -983,13 +1012,15 @@ The HTTP API exposes the Lambda at /api/git/{proxy+} (any verb). API
 Gateway's JWT authorizer validates the Cognito Bearer token before
 the Lambda is invoked.
 
-GitHub App credentials supplied via Terraform vars:
-- github_app_id              (committed to terraform.tfvars, gitignored)
-- github_app_installation_id (committed to terraform.tfvars, gitignored)
+GitHub App credentials (app_id, installation_id, private_key) live in
+a single SSM SecureString parameter as JSON:
+  brigitte-le-roux-website.github-app-secrets
+The Lambda reads + parses it at cold start. No Terraform variables for
+GitHub App credentials; no terraform.tfvars.
 
-GitHub App private key (PEM) is in SSM SecureString at
-brigitte-le-roux-website.github-app-private-key, read by the Lambda
-at cold start.
+source_code_hash is computed over the BUNDLED dist/index.mjs (not the
+ZIP, which is non-deterministic), so re-applies don't trigger spurious
+Lambda updates.
 EOF
 )"
 ```
@@ -1031,7 +1062,7 @@ Expected: the most recent run is from the smoke-test (Task 8), NOT from the push
 | Spec requirement | Plan task |
 | --- | --- |
 | `github-gateway` Lambda (Node 22 ESM, ZIP, arm64) | Tasks 4 + 6 |
-| Reads GitHub App PEM from SSM at cold start, caches | Task 4 (lib/octokit.mjs) + Task 3 (SSM upload) |
+| Reads GitHub App credentials from a single SSM SecureString JSON at cold start, caches | Task 4 (lib/octokit.mjs) + Task 3 (SSM upload) |
 | Octokit + `createAppAuth` for installation tokens | Task 4 (lib/octokit.mjs) |
 | Path allowlist enforcement (only `packages/website/content/`) | Task 4 (lib/allowlist.mjs) |
 | Commit-author rewrite from JWT email claim | Task 4 (lib/commit-author.mjs) |
@@ -1039,7 +1070,7 @@ Expected: the most recent run is from the smoke-test (Task 8), NOT from the push
 | HTTP API + JWT authorizer via `lambda-trigger-apigw` module | Task 6 |
 | Route `/api/git/{proxy+}` | Task 6 |
 | CORS for `cms.brigitte-le-roux.com` | Task 6 |
-| SSM SecureString param `brigitte-le-roux-website.github-app-private-key` | Task 3 |
+| SSM SecureString param `brigitte-le-roux-website.github-app-secrets` (single JSON) | Task 3 |
 | GitHub App creation + install + private key | Task 2 |
 | End-to-end smoke test (real commit via gateway) | Task 8 |
 
@@ -1050,11 +1081,37 @@ Expected: the most recent run is from the smoke-test (Task 8), NOT from the push
 - Custom domain on the API Gateway (deferred — `cms.brigitte-le-roux.com/api/*` via CloudFront origin proxying)
 - MFA enablement on Cognito (deferred)
 - CODEOWNERS file for `.github/`, `packages/functions/`, etc. (small follow-up)
+- Cleanup of the deprecated SSM parameter `brigitte-le-roux-website.github-app-private-key` (admin-only delete; placeholder value already overwrites the PEM)
 
-**Architectural uncertainty to confirm during execution**:
-- The `lambda-trigger-apigw` module's exact input field names (`cors_allow_*`?, `api_endpoint` output?). Task 6 explicitly flags this — read the module source before applying.
-- Adding the Plan 5 media-uploader Lambda will require either re-instantiating the `lambda-trigger-apigw` module with both integrations, or seeing if the module supports adding routes to an existing API. The cleanest path is probably to combine both Lambdas under a SINGLE `lambda-trigger-apigw` instance in Plan 5 — restructure `functions.tf` at that point. For Plan 4 alone, one instance + one integration is the right shape.
+**Notes on the `lambda-trigger-apigw` module interface** (confirmed during execution):
+- `cors` accepts either `null/false/true` or an object with `allow_origins`,
+  `allow_methods`, `allow_headers`, `expose_headers`, `max_age`,
+  `allow_credentials` (NOT separate `cors_allow_*` variables).
+- Outputs include `api_id`, `api_endpoint`, `execution_arn`,
+  `stage_id`, `authorizer_id`, `integration_ids`.
+- **`disable_execute_api_endpoint` defaults to `true`** — must set to
+  `false` until a custom domain is wired up.
+- Adding Plan 5's media-uploader is a single new entry in the same
+  `integrations` map (one shared HTTP API).
 
-**Deviations from the original spec**:
-- The spec described an `aws_apigatewayv2_*` standalone Terraform configuration in §4. This plan uses the `lambda-trigger-apigw` module instead, per your instruction to use Maev4l/terraform-modules for Lambdas + their triggers. The module bundles HTTP API + authorizer + integrations + routes; net effect is the same.
-- API Gateway custom domain (`cms-api.brigitte-le-roux.com` per the original spec) is dropped entirely — replaced by the unified `cms.brigitte-le-roux.com/api/*` routed through CloudFront in a later plan.
+**Deviations from the original spec** (rolled back into the spec
+after execution):
+- The spec described an `aws_apigatewayv2_*` standalone Terraform
+  configuration in §4. This plan uses the `lambda-trigger-apigw` module
+  instead, per the instruction to use Maev4l/terraform-modules for
+  Lambdas + their triggers. The module bundles HTTP API + authorizer
+  + integrations + routes; net effect is the same.
+- API Gateway custom domain (`cms-api.brigitte-le-roux.com` per the
+  original spec) is dropped entirely — replaced by the unified
+  `cms.brigitte-le-roux.com/api/*` routed through CloudFront in a
+  later plan.
+- **esbuild bundling** added during execution: source bundled to
+  `dist/index.mjs` (~180 KB), wrapped in a 36 KB ZIP, with `@aws-sdk/*`
+  externalized (runtime-provided). Replaces the initial "zip the whole
+  function directory" approach (~5 MB).
+- **Single SSM SecureString containing JSON** for App ID + Installation
+  ID + private key, instead of separate Terraform vars + a PEM-only
+  SSM SecureString. No `terraform.tfvars`; no GitHub App credentials
+  in Terraform state.
+- **`source_code_hash` hashes the bundled file**, not the ZIP — ZIPs
+  are non-deterministic and would force spurious Lambda updates.

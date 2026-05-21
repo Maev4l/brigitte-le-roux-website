@@ -343,43 +343,69 @@ Location: `packages/functions/github-gateway/`.
   notation throughout. ESLint via `eslint.config.js`.
 - Strict version pinning in `package.json`.
 - Packaging: ZIP. AWS-managed Node.js 22 runtime, `architecture = "arm64"`
-  (Graviton). Production deps installed via `yarn install --production`,
-  then zipped together with the source. Terraform tracks the artefact via
-  `source_code_hash` so changes trigger a Lambda update.
-- Uses the Maev4l/terraform-modules Lambda module (ZIP variant) to define
-  the function itself (resource + role + log group). Exact module name to
-  be confirmed when authoring the implementation plan.
+  (Graviton). Source is bundled with **esbuild** (library mode, target
+  `node22`, format ESM, `@aws-sdk/*` externalized — those are
+  runtime-provided). The bundled `dist/index.mjs` (~180 KB) goes into
+  the ZIP (~36 KB compressed). Terraform's `source_code_hash` is fed
+  `filebase64sha256` of the **bundled file**, not the ZIP — ZIPs are
+  non-deterministic (mtimes, file ordering) and would otherwise trigger
+  spurious Lambda updates on every apply.
+- Uses the `Maev4l/terraform-modules//modules/lambda-function` module
+  (v1.7.1 pinned) for the Lambda resource + IAM execution role +
+  CloudWatch log group. The HTTP API + JWT authorizer + integration +
+  route are bundled in the same project via
+  `Maev4l/terraform-modules//modules/lambda-trigger-apigw` (v1.7.1).
 - Dependencies (production):
   - `@octokit/rest`
   - `@octokit/auth-app`
   - `@aws-sdk/client-ssm`
-- `@aws-sdk/*` modules included explicitly even though the Lambda runtime
-  bundles older versions, so the deployed code uses pinned, predictable
-  SDK versions.
+- `@aws-sdk/*` modules are listed as dependencies for local development
+  + bundler resolution, but esbuild marks them `external` so the deployed
+  bundle uses the AWS-managed Node.js 22 runtime's pinned versions
+  instead of inlining them.
 
 #### Configuration (env vars)
 
-- `GITHUB_APP_ID` — non-sensitive integer (the App's ID on GitHub).
-- `GITHUB_APP_INSTALLATION_ID` — non-sensitive integer.
-- `GITHUB_APP_PRIVATE_KEY_PARAM` — SSM parameter path, e.g.
-  `brigitte-le-roux-website.github-app-private-key`.
 - `ALLOWED_REPO` — `Maev4l/brigitte-le-roux-website`.
-- `ALLOWED_PATHS` — JSON array of path prefixes the Lambda accepts in
-  commits. Initial value: `["packages/website/content/"]`. Media uploads
-  go directly to S3 (browser → presigned URL); no git path is needed for
-  them. Keeping the allowlist minimal is the safety fence.
+- `GITHUB_APP_SECRETS_PARAM` — SSM parameter name where the GitHub App
+  credentials JSON lives (e.g. `brigitte-le-roux-website.github-app-secrets`).
+
+No env vars carry the App ID, Installation ID, or PEM directly — all
+three live in the single SSM SecureString parameter and the Lambda
+reads + parses them at cold start. This keeps GitHub App credentials
+out of Terraform state and out of the Lambda config visible in the AWS
+console.
+
+The path allowlist is hardcoded in `lib/allowlist.mjs` rather than
+passed via env (no need to make it dynamic — changes require a code
+review anyway).
 
 #### SSM Parameter Store
 
-Terraform: `packages/infrastructure/ssm.tf`.
-
-- One SSM parameter at `brigitte-le-roux-website.github-app-private-key`,
-  type `SecureString`, default AWS-managed KMS key (`aws/ssm`).
-- Lambda IAM role has `ssm:GetParameter` on this specific ARN only, plus
-  `kms:Decrypt` on `aws/ssm`. Nothing wider.
-- Lambda reads the parameter at module load (cold start) with
-  `WithDecryption: true`, caches the PEM in module scope, then sets up
-  Octokit. Warm invocations skip the SSM call.
+- **Single SSM SecureString** at `brigitte-le-roux-website.github-app-secrets`,
+  type `SecureString`, default AWS-managed KMS key (`aws/ssm`). Contains
+  JSON:
+  ```json
+  {
+    "app_id": "3796411",
+    "installation_id": "134363513",
+    "private_key": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----\n"
+  }
+  ```
+- NOT managed by Terraform — created and updated manually via
+  `aws ssm put-parameter` (the value depends on the GitHub App + PEM
+  that the administrator generates interactively on github.com, so
+  Terraform-managed creation would require non-Terraform-tracked
+  variables anyway).
+- Lambda IAM role has `ssm:GetParameter` on this specific ARN only,
+  plus `kms:Decrypt` on `aws/ssm`. Nothing wider.
+- Lambda reads + parses the JSON at module load (cold start), caches
+  the resulting Octokit instance in module scope. Warm invocations skip
+  the SSM call.
+- Rotation procedure (PEM regeneration): regenerate the PEM on the
+  GitHub App settings page → `aws ssm put-parameter ... --overwrite`
+  with a new JSON containing the new private_key → force a Lambda
+  redeploy so a fresh container picks up the new value at cold start.
 
 #### Per-request behaviour
 
@@ -388,8 +414,9 @@ Terraform: `packages/infrastructure/ssm.tf`.
    `event.requestContext.authorizer.jwt.claims`.
 2. Repo lock: reject any request whose path doesn't match `ALLOWED_REPO`.
 3. Path allowlist: for commit-creating calls, inspect the file paths in
-   the request body; reject (403) if any path falls outside
-   `ALLOWED_PATHS`. This is the primary safety fence — see §5 / §6.
+   the request body; reject (403) if any path falls outside the hardcoded
+   allowlist (`packages/website/content/` is the only entry today, in
+   `lib/allowlist.mjs`). This is the primary safety fence — see §5 / §6.
 4. Commit-author rewrite: inject the Cognito user's email into
    `author.name` + `author.email` so `git log` attributes the commit to
    Brigitte even though the GitHub App is the committer.
