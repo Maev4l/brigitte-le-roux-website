@@ -1,16 +1,17 @@
-# Cognito + API Gateway Scaffold
+# Cognito Scaffold
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stand up the authentication + API entry point for the CMS:
+**Goal:** Stand up the authentication entry point for the CMS:
 - A Cognito User Pool where the editor (Brigitte) will eventually authenticate.
 - A Hosted UI for the login flow (sign-in page rendered by AWS, branded with our App Client).
-- An HTTP API Gateway with a JWT authorizer wired to the User Pool — ready to receive Lambda routes in Plan 4.
 - A single manually-created test user, used to validate the Hosted UI login flow end-to-end.
+
+**API Gateway is intentionally NOT in this plan.** The Maev4l/terraform-modules `lambda-trigger-apigw` module (used in Plan 4 when the first Lambda is wired up) creates the HTTP API + JWT authorizer + integrations + routes bundled together — so spinning up an empty API Gateway here would just be undone in Plan 4. Plan 4 will reference this plan's Cognito User Pool when configuring the JWT authorizer.
 
 No Lambdas, no routes, no CMS code yet — that's Plan 4+.
 
-**Architecture:** Pure Terraform addition under `packages/infrastructure/`. Two new files: `cognito.tf` and `api-gateway.tf`. The target end state for the CMS is a **single custom subdomain** `cms.brigitte-le-roux.com` served by a CloudFront distribution with two origins:
+**Architecture:** Pure Terraform addition under `packages/infrastructure/`. One new file: `cognito.tf`. The target end state for the CMS is a **single custom subdomain** `cms.brigitte-le-roux.com` served by a CloudFront distribution with two origins:
 
 ```
 cms.brigitte-le-roux.com  (CloudFront, one cert)
@@ -244,98 +245,7 @@ Expected: `validate` reports "Success! The configuration is valid."
 
 ---
 
-### Task 3: Write `packages/infrastructure/api-gateway.tf`
-
-**Files:**
-- Create: `packages/infrastructure/api-gateway.tf`
-
-- [ ] **Step 1: Create the file**
-
-Write `packages/infrastructure/api-gateway.tf` with this exact content:
-
-```hcl
-# ---------------------------------------------------------------------------
-# API Gateway v2 (HTTP API) for the CMS backend.
-# All editor requests funnel through here. CORS-locked to brigitte-le-roux.com.
-# Cognito JWT authorizer wired in; routes are added in Plan 4 when the
-# git-gateway + media-uploader Lambdas land.
-# ---------------------------------------------------------------------------
-
-resource "aws_apigatewayv2_api" "cms" {
-  name          = "brigitte-le-roux-website-cms"
-  protocol_type = "HTTP"
-  description   = "Editor backend: routes Sveltia calls to the git-gateway and media-uploader Lambdas"
-
-  # CORS is configured defensively even though the end-state is same-origin
-  # (Sveltia and the API both served from cms.brigitte-le-roux.com via
-  # CloudFront). Same-origin requests skip CORS, so these headers won't
-  # normally fire — but they make the API safely usable from the same
-  # subdomain if anything ever calls the execute-api URL directly during
-  # development.
-  cors_configuration {
-    allow_origins     = ["https://cms.brigitte-le-roux.com"]
-    allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"]
-    allow_headers     = ["Authorization", "Content-Type"]
-    expose_headers    = ["ETag"]
-    max_age           = 3600
-    allow_credentials = false
-  }
-}
-
-# Default stage with auto-deploy. Means any route/integration change in
-# Terraform takes effect on `terraform apply` without an explicit deployment
-# step.
-resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.cms.id
-  name        = "$default"
-  auto_deploy = true
-}
-
-# JWT authorizer: validates the Bearer token presented by Sveltia against
-# the Cognito User Pool. Routes that reference this authorizer require a
-# valid token; routes without it accept anonymous traffic (Plan 4 won't
-# expose any anonymous routes).
-resource "aws_apigatewayv2_authorizer" "cognito" {
-  api_id           = aws_apigatewayv2_api.cms.id
-  authorizer_type  = "JWT"
-  identity_sources = ["$request.header.Authorization"]
-  name             = "cognito-jwt"
-
-  jwt_configuration {
-    audience = [aws_cognito_user_pool_client.cms.id]
-    issuer   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.cms.id}"
-  }
-}
-
-output "cms_api_endpoint" {
-  value       = aws_apigatewayv2_api.cms.api_endpoint
-  description = "Default HTTPS endpoint for the CMS API (no custom domain yet)"
-}
-
-output "cms_api_id" {
-  value       = aws_apigatewayv2_api.cms.id
-  description = "API ID — referenced by route+integration resources in Plan 4"
-}
-
-output "cms_api_authorizer_id" {
-  value       = aws_apigatewayv2_authorizer.cognito.id
-  description = "Cognito JWT authorizer ID — attached to routes by Plan 4"
-}
-```
-
-- [ ] **Step 2: Format and validate**
-
-Run:
-```bash
-terraform -chdir=packages/infrastructure fmt api-gateway.tf
-terraform -chdir=packages/infrastructure validate
-```
-
-Expected: `validate` succeeds.
-
----
-
-### Task 4: Terraform plan + apply
+### Task 3: Terraform plan + apply
 
 - [ ] **Step 1: Plan**
 
@@ -345,20 +255,14 @@ Expected: plan shows these resources to add:
 - `aws_cognito_user_pool.cms`
 - `aws_cognito_user_pool_client.cms`
 - `aws_cognito_user_pool_domain.cms`
-- `aws_apigatewayv2_api.cms`
-- `aws_apigatewayv2_stage.default`
-- `aws_apigatewayv2_authorizer.cognito`
 
-Plan summary: `Plan: 6 to add, 0 to change, 0 to destroy.`
+Plan summary: `Plan: 3 to add, 0 to change, 0 to destroy.`
 
 Plus four new outputs added:
 - `cognito_user_pool_id` (known after apply)
 - `cognito_app_client_id` (known after apply)
 - `cognito_hosted_ui_url` (known after apply)
 - `cognito_issuer` (known after apply)
-- `cms_api_endpoint` (known after apply)
-- `cms_api_id` (known after apply)
-- `cms_api_authorizer_id` (known after apply)
 
 If any **existing** resource appears in the change set, stop — investigate before applying.
 
@@ -372,16 +276,13 @@ cognito_user_pool_id = "eu-central-1_AbCdEfGhI"
 cognito_app_client_id = "1234567890abcdefghij"
 cognito_hosted_ui_url = "https://brigitte-le-roux-website-cms.auth.eu-central-1.amazoncognito.com"
 cognito_issuer = "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_AbCdEfGhI"
-cms_api_endpoint = "https://abcdef1234.execute-api.eu-central-1.amazonaws.com"
-cms_api_id = "abcdef1234"
-cms_api_authorizer_id = "..."
 ```
 
-Record these — they're needed for Task 5 (test user creation) and Task 6 (smoke test). Subsequent plans (4+) will reference them via Terraform too, so they don't need to be hardcoded elsewhere yet.
+Record these — they're needed for Task 4 (test user creation) and Task 5 (smoke test). Plan 4's `lambda-trigger-apigw` module will reference the User Pool + client via Terraform automatically, so no hardcoding needed elsewhere.
 
 ---
 
-### Task 5: Create a test Cognito user
+### Task 4: Create a test Cognito user
 
 This is the one manual bootstrap step. Cognito's `allow_admin_create_user_only = true` means new users can only be created by an admin.
 
@@ -412,7 +313,7 @@ If the email doesn't arrive within ~2 min: check spam; check the Cognito console
 
 ---
 
-### Task 6: Smoke-test the Hosted UI login flow
+### Task 5: Smoke-test the Hosted UI login flow
 
 Verify the user can log in via Cognito's Hosted UI and gets redirected back to `https://cms.brigitte-le-roux.com/` with an auth code.
 
@@ -452,55 +353,11 @@ If the URL bar shows no `?code=` parameter, OR the redirect went somewhere unexp
 
 ---
 
-### Task 7: Verify the API Gateway endpoint responds + CORS works
-
-The API has no routes yet, so any request returns 404. We verify the API is alive AND that CORS preflight succeeds.
-
-- [ ] **Step 1: Check that the endpoint is reachable**
-
-```bash
-API=$(terraform -chdir=packages/infrastructure output -raw cms_api_endpoint)
-curl -sI "$API/git/anything" | head -1
-```
-
-Expected: `HTTP/2 404` or similar — proves the API is reachable; 404 is correct because no route is defined yet.
-
-- [ ] **Step 2: CORS preflight**
-
-```bash
-curl -si -X OPTIONS \
-  -H "Origin: https://cms.brigitte-le-roux.com" \
-  -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: Authorization,Content-Type" \
-  "$API/git/anything" | head -10
-```
-
-Expected: a response that includes:
-- `HTTP/2 204` (no content, which is correct for CORS preflight)
-- `access-control-allow-origin: https://cms.brigitte-le-roux.com`
-- `access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH` (or a subset matching the request)
-- `access-control-allow-headers: authorization,content-type`
-
-If CORS headers are missing, the `cors_configuration` block didn't apply correctly — check `api-gateway.tf`.
-
-- [ ] **Step 3: Confirm a wrong origin is rejected**
-
-```bash
-curl -si -X OPTIONS \
-  -H "Origin: https://evil.example.com" \
-  -H "Access-Control-Request-Method: POST" \
-  "$API/git/anything" | head -10
-```
-
-Expected: response is `HTTP/2 204` BUT lacks the `access-control-allow-origin` header for `evil.example.com` — that absence is what browsers use to reject the request. (API Gateway always returns 204; the CORS check is enforced by the browser based on response headers.)
-
----
-
-### Task 8: Stage, review, commit
+### Task 6: Stage, review, commit
 
 - [ ] **Step 1: Stage**
 
-Run: `git add packages/infrastructure/cognito.tf packages/infrastructure/api-gateway.tf`
+Run: `git add packages/infrastructure/cognito.tf`
 
 - [ ] **Step 2: Review staged diffs**
 
@@ -508,7 +365,6 @@ Run: `git status --short`
 
 Expected:
 ```
-A  packages/infrastructure/api-gateway.tf
 A  packages/infrastructure/cognito.tf
 ```
 
@@ -516,30 +372,25 @@ A  packages/infrastructure/cognito.tf
 
 ```bash
 git commit -m "$(cat <<'EOF'
-infra(cms): Cognito User Pool + API Gateway HTTP API scaffold
+infra(cms): Cognito User Pool for the CMS editor
 
-Set up the auth + API entry point for the CMS without any Lambda code
-or routes yet. Sveltia (Plan 6) and the Lambdas (Plans 4-5) will plug
-into these resources later.
+User pool "brigitte-le-roux-website-cms": case-insensitive email
+usernames, admin-only user creation, 8-char min password with mixed
+case + numbers + symbols, optional TOTP MFA, admin-only account
+recovery, advanced security mode OFF (no extra MAU charge). Public
+SPA app client (no client secret) with OAuth Authorization Code + PKCE,
+callback https://cms.brigitte-le-roux.com/, 1h access tokens, 365d
+refresh tokens. Cognito-managed Hosted UI domain (prefix
+brigitte-le-roux-website-cms).
 
-- packages/infrastructure/cognito.tf
-  User pool "brigitte-le-roux-website-cms": email-as-username, admin-only
-  user creation, 12-char min password with mixed case + numbers, optional
-  TOTP MFA, verified-email account recovery. Public SPA app client with
-  OAuth Authorization Code + PKCE, callback https://cms.brigitte-le-roux.com/,
-  1h access tokens, 30d refresh tokens. Cognito-managed Hosted UI domain
-  (prefix brigitte-le-roux-website-cms).
+API Gateway is intentionally NOT created here — Plan 4's first Lambda
+trigger uses Maev4l/terraform-modules lambda-trigger-apigw, which
+creates the HTTP API + JWT authorizer + routes bundled.
 
-- packages/infrastructure/api-gateway.tf
-  HTTP API + default $default auto-deploy stage. JWT authorizer wired to
-  the Cognito user pool. CORS locked to https://cms.brigitte-le-roux.com.
-  No routes yet — added with the Lambdas in Plan 4 under the /api/ prefix
-  to match the unified-subdomain architecture.
-
-CMS end-state architecture: cms.brigitte-le-roux.com served by CloudFront
-with two origins — S3 (Sveltia UI) by default, API Gateway for /api/*.
-ACM certs for cms.* already exist (admin-created). The CloudFront
-distribution itself lands in a follow-up plan.
+CMS end-state architecture: cms.brigitte-le-roux.com served by
+CloudFront with two origins — S3 (Sveltia UI) by default, API Gateway
+for /api/*. ACM certs for cms.* already exist (admin-created). The
+CloudFront distribution itself lands in a follow-up plan.
 EOF
 )"
 ```
@@ -548,7 +399,7 @@ Expected: commit lands. Confirm with `git log --oneline -3`.
 
 ---
 
-### Task 9: Push to `main`
+### Task 7: Push to `main`
 
 The push won't trigger the website-deploy workflow (path filter doesn't match `packages/infrastructure/**`), so this is just a regular push.
 
@@ -574,16 +425,14 @@ Expected: the most recent run is the one from the previous plan (Plan 2's first 
 | --- | --- |
 | User Pool `brigitte-le-roux-website-cms` | Task 2 |
 | Email as username | Task 2 |
-| Password policy 12 chars, mixed case, number | Task 2 |
+| Password policy (8 chars, mixed case, numbers + symbols per user spec) | Task 2 |
 | MFA optional (TOTP) | Task 2 |
-| Self-signup disabled (admin-only creation) | Task 2 + Task 5 |
-| App Client: public, OAuth Auth Code + PKCE, callback /admin/, scopes openid+email | Task 2 |
-| Hosted UI | Task 2 (Cognito-managed domain — see deviations below for the unified-subdomain decision) |
-| Cognito email-based password reset | Task 2 (`recovery_mechanism = verified_email`) |
-| HTTP API | Task 3 |
-| JWT authorizer wired to Cognito | Task 3 |
-| CORS allow CMS origin (now `https://cms.brigitte-le-roux.com`) | Task 3 |
-| Routes `/git/{proxy+}`, `POST /media/upload-url` | NOT IN THIS PLAN — added in Plan 4 with the Lambdas. Routes will sit under `/api/` (e.g. `/api/git/*`, `POST /api/media/upload-url`) to match the unified-subdomain path scheme. |
+| Self-signup disabled (admin-only creation) | Task 2 + Task 4 |
+| App Client: public, OAuth Auth Code + PKCE, callback https://cms.brigitte-le-roux.com/, scopes openid+email | Task 2 |
+| Hosted UI | Task 2 (Cognito-managed prefix domain — see deviations below) |
+| Account recovery (admin_only per user spec) | Task 2 |
+| HTTP API + JWT authorizer + CORS | NOT IN THIS PLAN — Plan 4 creates them via Maev4l/terraform-modules lambda-trigger-apigw bundled with the first Lambda |
+| Routes `/git/{proxy+}`, `POST /media/upload-url` | NOT IN THIS PLAN — added in Plan 4 under `/api/` prefix (e.g. `/api/git/*`, `POST /api/media/upload-url`) for the unified-subdomain path scheme |
 | Custom subdomain for the CMS | NOT IN THIS PLAN — `cms.brigitte-le-roux.com` CloudFront distribution lands later. ACM certs already issued by admin. |
 
 **Out of scope** (handled in later plans or as follow-ups):
