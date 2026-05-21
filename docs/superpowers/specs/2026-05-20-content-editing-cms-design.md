@@ -26,7 +26,7 @@ no AWS knowledge on her side.
 | Editing surface | Web browser; admin at `brigitte-le-roux.com/admin/` |
 | Publish behaviour | Auto-publish — every save reaches the live site within ~1–2 min |
 | CMS | Sveltia CMS (modern, free, active fork of Decap; single static SPA, git-backed) |
-| Editor auth | AWS Cognito (User Pool, Hosted UI, email + password, MFA optional). No GitHub account for Brigitte. |
+| Editor auth | AWS Cognito (User Pool, email + password). Sveltia renders its own login form and calls Cognito directly via `amazon-cognito-identity-js` (USER_SRP_AUTH). No Hosted UI redirect — Brigitte stays on `cms.brigitte-le-roux.com` end-to-end. No GitHub account for Brigitte. |
 | Repo / commit identity | GitHub App owned by the administrator; installed on the repo; Lambda mints short-lived installation tokens |
 | GitHub repo visibility | Public |
 | Media (PDF / image) storage | Direct browser → S3 via presigned URL signed by a Lambda. S3 stays canonical for binaries (matches today's invariant) |
@@ -42,9 +42,12 @@ no AWS knowledge on her side.
 ```
 Brigitte's browser
   │
-  │ Cognito Hosted UI (1. login)
+  │ 1. opens https://cms.brigitte-le-roux.com/
   ▼
-Sveltia CMS (static SPA at /admin/)
+Sveltia CMS (static SPA, served by CloudFront from S3 admin/ origin)
+  │ renders its own login form ──► Cognito USER_SRP_AUTH (no redirect)
+  │ stores tokens in localStorage
+  │
   │ 2a. text save (Bearer JWT)            2b. ask upload URL (Bearer JWT)
   ▼                                        ▼
 API Gateway HTTP API + JWT authorizer (Cognito)
@@ -290,29 +293,46 @@ Terraform: `packages/infrastructure/cognito.tf`.
 - Email as username.
 - Password policy: minimum 12 characters, mixed case, includes at least
   one number.
-- MFA: configured as **optional** at launch (Brigitte can enable TOTP from
-  her account settings). Decision to require MFA may follow once she is
-  comfortable.
-- Self-signup disabled — the administrator creates the user manually via the AWS console.
-- One App Client (public, no client secret). OAuth flows: Authorization
-  Code + PKCE. Allowed scopes: `openid email`. Callback URL:
-  `https://brigitte-le-roux.com/admin/`.
-- Hosted UI custom domain: `auth.brigitte-le-roux.com` (requires an ACM
-  cert in `us-east-1` covering the subdomain — Terraform manages it).
-- Cognito's built-in email-based password-reset flow is used. Sender
-  identity uses SES (covered by Cognito's free tier for a single user).
+- MFA: not configured at the pool level at launch (omitted from Terraform
+  because `cognito-idp:SetUserPoolMfaConfig` is not in the day-to-day dev
+  role). Admin can enable later via console if needed.
+- Self-signup disabled — the administrator creates the user manually via
+  the AWS console or via `aws cognito-idp admin-create-user`.
+- One App Client (public, no client secret). `ALLOW_USER_SRP_AUTH` +
+  `ALLOW_REFRESH_TOKEN_AUTH` enabled — the Sveltia plugin uses SRP for
+  the in-app login (see "Custom Sveltia backend plugin" below). OAuth
+  Authorization Code + PKCE is also configured (`callback_urls =
+  https://cms.brigitte-le-roux.com/`) as a fallback in case we ever
+  revert to Hosted UI; with the in-Sveltia approach those fields are
+  unused.
+- Hosted UI: Cognito-managed prefix domain `<prefix>.auth.<region>.amazoncognito.com`
+  is created (it costs nothing and gives us the Hosted-UI fallback) but
+  not normally surfaced to Brigitte. No custom domain on Cognito — the
+  unified-subdomain architecture means everything Brigitte sees is on
+  `cms.brigitte-le-roux.com`.
+- Account recovery: `admin_only` — passwords are reset by the
+  administrator (via console), not via self-service email. Acceptable
+  for a single-editor site.
 
 ### API Gateway HTTP API
 
-Terraform: `packages/infrastructure/api-gateway.tf`.
+Created via `Maev4l/terraform-modules//modules/lambda-trigger-apigw` —
+the module creates the HTTP API + JWT authorizer + integrations + routes
+bundled with the first Lambda's trigger (Plan 4). No standalone
+`api-gateway.tf` in this project.
 
-- Single HTTP API, custom domain `cms-api.brigitte-le-roux.com`.
-- One JWT authorizer wired to the Cognito User Pool, applied to all routes.
-- Routes:
-  - `/git/{proxy+}` → integrates with the `git-gateway` Lambda
-  - `POST /media/upload-url` → integrates with the `media-uploader` Lambda
-- CORS: allow origin `https://brigitte-le-roux.com`, methods `GET, POST,
-  PUT, DELETE, OPTIONS, HEAD`, headers `Authorization, Content-Type`.
+- Single HTTP API, no custom domain. Routes are reachable both via the
+  default `<api-id>.execute-api.<region>.amazonaws.com` URL AND
+  (transparently) via `https://cms.brigitte-le-roux.com/api/*` once the
+  CMS CloudFront distribution lands.
+- One JWT authorizer wired to the Cognito User Pool, applied to all
+  routes that require authentication.
+- Routes (added when each Lambda trigger is wired up):
+  - `POST/PUT/GET/DELETE /api/git/{proxy+}` → integrates with the `git-gateway` Lambda
+  - `POST /api/media/upload-url` → integrates with the `media-uploader` Lambda
+- CORS configured by the module for `https://cms.brigitte-le-roux.com`
+  (defensive — end-state is same-origin via CloudFront, so CORS preflight
+  rarely fires).
 
 ### git-gateway Lambda
 
@@ -391,16 +411,47 @@ Terraform: `packages/infrastructure/ssm.tf`.
 
 ### Custom Sveltia backend plugin
 
-`packages/website/public/admin/sveltia-cognito-backend.js`. ~80 lines of JS.
+`packages/website/public/admin/sveltia-cognito-backend.js`. ~250 lines of JS.
 
-- Wraps Sveltia's built-in `github` backend with two overrides:
-  - OAuth flow: redirect to Cognito Hosted UI instead of github.com.
-  - API base URL: `https://cms-api.brigitte-le-roux.com/git` instead of
-    `https://api.github.com`.
-- Attaches `Authorization: Bearer <Cognito access token>` to every request.
-- Stores Cognito tokens in `localStorage`.
-- Silently refreshes the access token (default 1 h TTL) using the refresh
-  token (default 30 d TTL).
+The plugin replaces Sveltia's OAuth-redirect flow with an in-app login
+form that talks to Cognito directly via `amazon-cognito-identity-js`.
+Brigitte never sees the AWS-managed `amazoncognito.com` URL — the entire
+auth UX stays on `cms.brigitte-le-roux.com`.
+
+- **Login form**: HTML form (email + password) rendered when no valid
+  refresh token is found in `localStorage`. Branded with the site's
+  vermillion/parchment styling.
+- **Authentication**: `CognitoUserPool.authenticateUser` with `USER_SRP_AUTH`.
+  The SDK handles the SRP cryptographic exchange; the password never
+  leaves the browser in plaintext.
+- **Token storage**: `localStorage` keys for access token (1 h TTL),
+  id token (1 h TTL), refresh token (365 d TTL — set in Plan 3's
+  Cognito App Client).
+- **Silent refresh**: when the access token approaches expiry, the
+  plugin calls `CognitoUser.refreshSession()` using the refresh token,
+  swaps in the new access + id tokens. Transparent to the editor.
+- **API call wiring**: the plugin overrides Sveltia's `api_root` to
+  `/api/git` (relative — same-origin under `cms.brigitte-le-roux.com`).
+  Every outbound request gets `Authorization: Bearer <id_token>` (the
+  id_token is what API Gateway's JWT authorizer validates).
+- **Logout**: clears `localStorage`, re-renders the login form.
+
+**No Hosted UI, no OAuth Authorization Code flow, no redirect bounce.**
+The Cognito App Client's OAuth-related fields (`callback_urls`,
+`allowed_oauth_flows`, `allowed_oauth_scopes`) configured in Plan 3 are
+unused by this plugin but kept as a fallback option in case we ever want
+to revert to the Hosted UI flow.
+
+Bundle-size impact: `amazon-cognito-identity-js` adds ~150 KB gzipped
+(or ~50 KB if we use the modular `@aws-sdk/client-cognito-identity-provider`
+with tree-shaking). Acceptable for a CMS UI.
+
+**Trade-offs accepted**: no built-in MFA UI (would need ~40 extra lines
+to render a TOTP prompt when MFA is enabled — deferred until/unless MFA
+is turned on), no built-in self-service password reset (admin resets
+passwords via console — acceptable for a single-editor site), no built-in
+account-lockout UX (Cognito still enforces lockout server-side; the
+plugin just surfaces the error).
 
 Sveltia `config.yml` references this plugin and points `backend.api_root`
 to our API Gateway domain. `backend.repo` is `Maev4l/brigitte-le-roux-website`.
@@ -681,7 +732,9 @@ Suggested phasing (the actual implementation plan will refine this):
 1. **§0 Refactor** — single commit. Pause here for the administrator to commit, create
    the public GitHub remote, push.
 2. **Cognito + API Gateway + SSM scaffolding** — Terraform only, no
-   Lambda code yet. Verify Hosted UI works with a dummy user.
+   Lambda code yet. Verify Cognito User Pool with a dummy user via the
+   SRP login that Sveltia will use (or via the Cognito-managed Hosted UI
+   as a quick sanity check).
 3. **git-gateway Lambda** — including the GitHub App, path allowlist,
    commit-author rewrite. End-to-end: dummy Sveltia config commits a
    text file via the gateway.
