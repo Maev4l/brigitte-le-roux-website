@@ -30,3 +30,9 @@ variable "tags" {
     owner       = "terraform"
   }
 }
+
+# GitHub App credentials (app_id, installation_id, private_key) are NOT
+# Terraform variables — they live in a single SSM SecureString parameter
+# `brigitte-le-roux-website.github-app-secrets` containing JSON, read by
+# the github-gateway Lambda at cold start. See packages/functions/
+# github-gateway/lib/octokit.mjs.
