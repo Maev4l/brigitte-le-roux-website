@@ -7,6 +7,9 @@ yarn-debug.log
 packages/website/dist/
 packages/website/.astro/
 
+# Lambda ZIP artefacts
+packages/functions/*/dist/
+
 # Site binaries — canonical store is S3 (populated locally by hand, uploaded by `yarn frontend:deploy`).
 # These files are NOT tracked in git: some exceed GitHub's 100 MB per-file hard limit, and the
 # build/deploy pipeline already treats S3 as the source of truth. See CLAUDE.md for the recovery
@@ -36,6 +39,11 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Private keys (e.g. GitHub App PEMs). Should be uploaded to SSM SecureString
+# then deleted from local disk; this rule prevents accidental git tracking
+# in the window between download and SSM upload.
+*.pem
 
 # Terraform — state and local workspace (lock file is committed for reproducibility)
 packages/infrastructure/.terraform/

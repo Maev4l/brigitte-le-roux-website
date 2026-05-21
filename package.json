@@ -7,6 +7,8 @@
     "frontend:build":   "yarn --cwd packages/website build",
     "frontend:pull":    "yarn --cwd packages/website pull",
     "frontend:deploy":  "yarn --cwd packages/website deploy",
+    "backend:build":    "make -C packages/functions build",
+    "backend:deploy":   "make -C packages/functions build && yarn infra:apply",
     "infra:plan":       "terraform -chdir=packages/infrastructure plan",
     "infra:apply":      "terraform -chdir=packages/infrastructure apply -auto-approve"
   }
