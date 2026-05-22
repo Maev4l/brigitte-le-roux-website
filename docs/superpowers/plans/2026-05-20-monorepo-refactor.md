@@ -128,7 +128,7 @@ Run: `ls packages/infrastructure/`
 
 Expected (exactly these 8 files):
 ```
-cloudfront-function.js
+cloudfront-site-function.js
 cloudfront.tf
 dns.tf
 main.tf
@@ -137,12 +137,13 @@ s3.tf
 variables.tf
 versions.tf
 ```
+(The CloudFront function source was named `cloudfront-function.js` during Plan 1; it was later renamed to `cloudfront-site-function.js` as part of Plan 6 for symmetry with a new `cloudfront-cms-function.js`. The pre-rename name is the one a present-day clone will see if Plan 1 is re-run against the original-state filesystem.)
 
 - [ ] **Step 3: Verify `git status`**
 
 Run: `git status`
 
-Expected: now includes renames for each `.tf` file and `cloudfront-function.js`:
+Expected: now includes renames for each `.tf` file and `cloudfront-site-function.js` (named `cloudfront-function.js` at Plan 1 time; renamed in Plan 6):
 ```
 renamed:    infrastructure/main.tf -> packages/infrastructure/main.tf
 renamed:    infrastructure/s3.tf -> packages/infrastructure/s3.tf
