@@ -29,7 +29,10 @@ data "aws_iam_policy_document" "site" {
     condition {
       test     = "StringEquals"
       variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.site.arn]
+      values = [
+        aws_cloudfront_distribution.site.arn,
+        aws_cloudfront_distribution.cms.arn,
+      ]
     }
   }
 }

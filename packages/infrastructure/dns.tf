@@ -32,3 +32,27 @@ resource "aws_route53_record" "google_site_verification" {
   ttl     = 300
   records = ["google-site-verification=5q0Rk16zHDeHhP_0Igihm1cyi2IAU0wQMYkfkWmJ8nw"]
 }
+
+resource "aws_route53_record" "cms" {
+  zone_id = var.hosted_zone_id
+  name    = "cms.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.cms.domain_name
+    zone_id                = aws_cloudfront_distribution.cms.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "cms_aaaa" {
+  zone_id = var.hosted_zone_id
+  name    = "cms.${var.domain_name}"
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.cms.domain_name
+    zone_id                = aws_cloudfront_distribution.cms.hosted_zone_id
+    evaluate_target_health = false
+  }
+}

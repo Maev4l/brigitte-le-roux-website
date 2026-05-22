@@ -13,3 +13,18 @@ output "cloudfront_domain" {
 output "site_url" {
   value = "https://${var.domain_name}/"
 }
+
+output "cms_url" {
+  value       = "https://cms.${var.domain_name}/"
+  description = "CMS entry point. Redirects to /cms/ where Sveltia is served."
+}
+
+output "cms_distribution_id" {
+  value       = aws_cloudfront_distribution.cms.id
+  description = "CMS CloudFront distribution ID (for cache invalidations)."
+}
+
+output "cms_distribution_domain" {
+  value       = aws_cloudfront_distribution.cms.domain_name
+  description = "CMS CloudFront distribution cloudfront.net domain (for debugging via raw URL)."
+}
