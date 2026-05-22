@@ -104,16 +104,6 @@ resource "aws_cognito_user_pool_client" "cms" {
   ]
 }
 
-# Cognito-managed Hosted UI domain. Uses the prefix subdomain pattern at
-# <prefix>.auth.<region>.amazoncognito.com — free, no ACM cert needed.
-# The end-user-facing URL after login is cms.brigitte-le-roux.com, served
-# by the CloudFront distribution that lands in a later plan; the Hosted UI
-# only appears during the login moment.
-resource "aws_cognito_user_pool_domain" "cms" {
-  domain       = "brigitte-le-roux-website-cms"
-  user_pool_id = aws_cognito_user_pool.cms.id
-}
-
 output "cognito_user_pool_id" {
   value       = aws_cognito_user_pool.cms.id
   description = "Cognito User Pool ID — referenced by the API Gateway JWT authorizer"

@@ -304,11 +304,9 @@ Terraform: `packages/infrastructure/cognito.tf`.
   Authorization Code / Hosted UI flow is configured; Sveltia owns the
   full auth UX.
 - Hosted UI: NOT used. The Cognito-managed prefix domain
-  `<prefix>.auth.<region>.amazoncognito.com` is still allocated in
-  Terraform as a leftover from earlier scaffolding (costs nothing), but
-  with no OAuth flow on the App Client it has no login endpoint to
-  serve. The domain resource can be removed in a future cleanup.
-  Everything the user sees stays on `cms.brigitte-le-roux.com`.
+  `<prefix>.auth.<region>.amazoncognito.com` has been removed entirely
+  (no `aws_cognito_user_pool_domain` resource exists). Everything the
+  user sees stays on `cms.brigitte-le-roux.com`.
 - Account recovery: `admin_only` — passwords are reset by the
   administrator (via console), not via self-service email. Acceptable
   for a single-editor site.
