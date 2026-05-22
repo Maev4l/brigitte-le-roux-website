@@ -188,7 +188,7 @@ deployable artefact, not gitignored).
 
 CloudFront serves `/cms/` from S3 same as the rest of the site. Routing
 constraint: SPA-style refresh on `/cms/foo` should serve `/cms/index.html`.
-The existing CloudFront function (`packages/infrastructure/cloudfront-function.js`
+The existing CloudFront function (`packages/infrastructure/cloudfront-site-function.js`
 after §0) will be extended to handle this if it doesn't already.
 
 ## §2 — Content schemas mapped to Sveltia forms

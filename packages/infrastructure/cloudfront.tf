@@ -18,7 +18,7 @@ resource "aws_cloudfront_function" "rewrite_index" {
   runtime = "cloudfront-js-2.0"
   comment = "Rewrite directory URIs to /index.html"
   publish = true
-  code    = file("${path.module}/cloudfront-function.js")
+  code    = file("${path.module}/cloudfront-site-function.js")
 }
 
 resource "aws_cloudfront_distribution" "site" {
