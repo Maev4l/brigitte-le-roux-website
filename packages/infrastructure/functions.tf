@@ -64,19 +64,77 @@ resource "aws_iam_policy" "github_gateway" {
   policy      = data.aws_iam_policy_document.github_gateway.json
 }
 
-# HTTP API + JWT authorizer + integration + route — all bundled by the module.
-# A future Plan 5 media-uploader Lambda will be added as another entry in
-# the integrations map (no separate API).
-module "github_gateway_trigger" {
+# ---------------------------------------------------------------------------
+# media-manager Lambda. Signs presigned S3 PUT URLs and proactively
+# invalidates the CloudFront cache for the path about to be uploaded.
+# File bytes never traverse this Lambda.
+# ---------------------------------------------------------------------------
+
+locals {
+  mediaManagerZip    = "../functions/media-manager/dist/media-manager.zip"
+  mediaManagerBundle = "../functions/media-manager/dist/index.mjs"
+}
+
+module "media_manager" {
+  source = "github.com/Maev4l/terraform-modules//modules/lambda-function?ref=v1.7.1"
+
+  function_name = "brigitte-le-roux-website-media-manager"
+  architecture  = "arm64"
+  memory_size   = 256
+  timeout       = 10
+
+  additional_policy_arns = [aws_iam_policy.media_manager.arn]
+
+  zip = {
+    filename = local.mediaManagerZip
+    runtime  = "nodejs22.x"
+    handler  = "index.handler"
+    hash     = filebase64sha256(local.mediaManagerBundle)
+  }
+
+  environment_variables = {
+    BUCKET_NAME                = aws_s3_bucket.site.id
+    CLOUDFRONT_DISTRIBUTION_ID = aws_cloudfront_distribution.site.id
+  }
+}
+
+# IAM policy: scoped to ONLY the prefixes Sveltia is allowed to upload to,
+# plus CreateInvalidation on the website distribution. Logs perms come
+# from the lambda-function module.
+data "aws_iam_policy_document" "media_manager" {
+  statement {
+    effect  = "Allow"
+    actions = ["s3:PutObject"]
+    resources = [
+      "${aws_s3_bucket.site.arn}/pdfs/*",
+      "${aws_s3_bucket.site.arn}/img/*",
+      "${aws_s3_bucket.site.arn}/data/*",
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudfront:CreateInvalidation"]
+    resources = [aws_cloudfront_distribution.site.arn]
+  }
+}
+
+resource "aws_iam_policy" "media_manager" {
+  name        = "brigitte-le-roux-website-media-manager"
+  description = "media-manager Lambda: PutObject on whitelisted S3 prefixes + CloudFront invalidations"
+  policy      = data.aws_iam_policy_document.media_manager.json
+}
+
+# HTTP API + JWT authorizer + integrations + routes — all bundled by the
+# module. The single shared HTTP API for the CMS backend; both the
+# github-gateway and media-manager Lambdas attach as integrations on it.
+# Originally introduced in Plan 4 as `github_gateway_trigger`, renamed to
+# `cms_trigger` during Plan 5 once the media-manager became its second
+# consumer (state was moved via `terraform state mv`).
+module "cms_trigger" {
   source = "github.com/Maev4l/terraform-modules//modules/lambda-trigger-apigw?ref=v1.7.1"
 
   api_name = "brigitte-le-roux-website-cms"
 
-  # disable_execute_api_endpoint defaults to true (forces traffic through a
-  # custom domain). We don't have a custom domain on the API Gateway in
-  # Plan 4 — the unified cms.brigitte-le-roux.com CloudFront distribution
-  # comes later — so allow the execute-api URL for now to enable smoke
-  # testing.
   disable_execute_api_endpoint = false
 
   cors = {
@@ -103,15 +161,23 @@ module "github_gateway_trigger" {
         "ANY /api/git/{proxy+}",
       ]
     }
+    "media-manager" = {
+      function_name = module.media_manager.function_name
+      function_arn  = module.media_manager.function_arn
+      invoke_arn    = module.media_manager.invoke_arn
+      routes = [
+        "POST /api/media/upload-url",
+      ]
+    }
   }
 }
 
 output "cms_api_endpoint" {
-  value       = module.github_gateway_trigger.api_endpoint
-  description = "HTTP API base URL. Routes: <endpoint>/api/git/{proxy+}."
+  value       = module.cms_trigger.api_endpoint
+  description = "HTTP API base URL. Routes: <endpoint>/api/git/{proxy+}, <endpoint>/api/media/upload-url."
 }
 
 output "cms_api_id" {
-  value       = module.github_gateway_trigger.api_id
-  description = "HTTP API ID (referenced by later plans that add routes)."
+  value       = module.cms_trigger.api_id
+  description = "HTTP API ID (shared between github-gateway and media-manager Lambdas)."
 }
