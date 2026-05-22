@@ -59,7 +59,7 @@ S3 brigitte-le-roux-website (bucket CORS allows cms.brigitte-le-roux.com)
 
 ## Approach notes
 
-- **Single shared HTTP API.** The existing module call `module "github_gateway_trigger"` in `packages/infrastructure/functions.tf` is misleadingly named once a second Lambda is wired into it. This plan does NOT rename the module instance (would force `terraform state mv` and risk destroying the live HTTP API). The internal comment is updated to reflect that the module is now shared. A rename is a follow-up.
+- **Single shared HTTP API.** Rename the existing module call from `module "github_gateway_trigger"` (legacy name from Plan 4) to `module "cms_trigger"` since the API now serves both Lambdas. The rename is performed during execution via `terraform state mv module.github_gateway_trigger module.cms_trigger` so no resources are recreated — the live API keeps its ID, endpoint, and routes.
 - **File bytes never pass through the Lambda.** The Lambda only signs the URL and triggers an invalidation. This keeps the Lambda memory low (256 MB) and the upload throughput bounded only by the browser ↔ S3 link.
 - **Size enforcement at signing time.** The presigned URL includes `ContentLength` in the signature, so S3 rejects PUTs whose body length differs from the signed value. A client cannot upload more bytes than they declared.
 - **Multiple commits** during execution (Lambda code, Terraform, smoke-test cleanup).
@@ -493,7 +493,7 @@ Expected: validate succeeds.
 
 - [ ] **Step 1: Add the Lambda + IAM block**
 
-Open `packages/infrastructure/functions.tf` and add the following block **after** the existing `aws_iam_policy "github_gateway"` resource and **before** the `module "github_gateway_trigger"` block:
+Open `packages/infrastructure/functions.tf` and add the following block **after** the existing `aws_iam_policy "github_gateway"` resource and **before** the `module "github_gateway_trigger"` block (which Step 2 will rename to `cms_trigger`):
 
 ```hcl
 # ---------------------------------------------------------------------------
@@ -559,16 +559,16 @@ resource "aws_iam_policy" "media_manager" {
 
 - [ ] **Step 2: Add the route to the existing HTTP API module call**
 
-Still in `packages/infrastructure/functions.tf`, locate the `module "github_gateway_trigger"` block. **Update only its `integrations` map** to include the second Lambda. The full block after the edit should read:
+Still in `packages/infrastructure/functions.tf`, locate the `module "github_gateway_trigger"` block. **Rename it to `module "cms_trigger"`** (it now serves both Lambdas, not just github-gateway) AND **append a `media-manager` entry to its `integrations` map**. The full block after the edit should read:
 
 ```hcl
 # HTTP API + JWT authorizer + integrations + routes — all bundled by the
-# module. Originally created in Plan 4 for the github-gateway Lambda; now
-# also serves the media-manager Lambda (Plan 5). The module instance is
-# still named `github_gateway_trigger` to avoid the terraform state mv that
-# a rename would require — a follow-up rename to `cms_api` is acceptable
-# later but out of scope here.
-module "github_gateway_trigger" {
+# module. The single shared HTTP API for the CMS backend; both the
+# github-gateway and media-manager Lambdas attach as integrations on it.
+# Originally introduced in Plan 4 as `github_gateway_trigger`, renamed to
+# `cms_trigger` during Plan 5 once the media-manager became its second
+# consumer (state was moved via `terraform state mv`).
+module "cms_trigger" {
   source = "github.com/Maev4l/terraform-modules//modules/lambda-trigger-apigw?ref=v1.7.1"
 
   api_name = "brigitte-le-roux-website-cms"
@@ -915,7 +915,7 @@ gets its own IAM policy: s3:PutObject scoped to pdfs/* | img/* | data/*
 on the website bucket, plus cloudfront:CreateInvalidation on the website
 distribution. Env vars: BUCKET_NAME, CLOUDFRONT_DISTRIBUTION_ID.
 
-The existing module instance `github_gateway_trigger` now serves both
+The existing module instance (renamed `github_gateway_trigger` → `cms_trigger` during this plan) now serves both
 Lambdas (route ANY /api/git/{proxy+} unchanged, route POST /api/media/upload-url
 added). Renaming the module to `cms_api` is deferred to avoid the
 terraform state mv that a rename would force.
@@ -984,7 +984,7 @@ Expected: the most recent run pre-dates this push.
 
 - Sveltia config + custom plugin JS files (Plan 6): the `sveltia-s3-media.js` plugin that calls this endpoint.
 - CMS CloudFront distribution at `cms.brigitte-le-roux.com` (later plan): routes `/api/*` to the HTTP API, `/cms/*` to S3.
-- Rename `module "github_gateway_trigger"` → `module "cms_api"`: deferred to avoid `terraform state mv` risk on a live HTTP API.
+- (Earlier draft of this plan deferred the module rename; that decision was reversed during execution — the module was renamed to `cms_trigger` via `terraform state mv` and the live HTTP API kept its identity.)
 - Media browsing/listing in Sveltia (spec §4 explicit out-of-scope).
 - CloudWatch alarms on the new Lambda (spec §6 — added in a later operations plan).
 
