@@ -482,90 +482,108 @@ to our API Gateway domain. `backend.repo` is `Maev4l/brigitte-le-roux-website`.
 
 ## §4 — Media manager Lambda + S3 CORS
 
+> **Design pivot (2026-05-23).** The original Plan 5 design used the
+> media-manager Lambda to issue presigned S3 PUT URLs. During Plan 7
+> brainstorming we discovered Sveltia CMS doesn't support custom media
+> library plugins — its only S3 path is its built-in S3 library, which
+> requires real AWS credentials in the browser (no presigned URL hook).
+> §4 is therefore rewritten: the media-manager Lambda now issues
+> long-lived IAM credentials over an authenticated endpoint, and
+> Sveltia's built-in S3 library uses them. Plan 7 (forthcoming)
+> implements this refactor.
+
 ### media-manager Lambda
 
 Location: `packages/functions/media-manager/`.
 
-- Same packaging conventions as github-gateway (ZIP, AWS-managed Node.js 22
-  runtime, arm64/Graviton, Maev4l/terraform-modules Lambda ZIP module).
+Packaged as a **container image** (not ZIP), arm64/Graviton, using
+[AWS Lambda Web Adapter (LWA)](https://aws.github.io/aws-lambda-web-adapter/)
+so the request handler is a standard Node.js HTTP server (Hono) rather
+than a Lambda event handler. Same code runs locally (`yarn dev` →
+Hono server on `localhost:8080`) and in Lambda — LWA bridges API
+Gateway events to HTTP.
+
+- Container base: `node:22-slim` (or distroless for smaller image)
+- AWS Lambda Web Adapter copied from the public AWS layer
+- HTTP framework: [Hono](https://hono.dev) (~10 KB, edge-first, fast)
 - Dependencies (production):
-  - `@aws-sdk/client-s3`
-  - `@aws-sdk/s3-request-presigner`
-  - `@aws-sdk/client-cloudfront`
+  - `hono` — HTTP framework
+  - `@aws-sdk/client-ssm` — read credentials from SSM at cold start
+
+ECR repository: `brigitte-le-roux-website-media-manager`
+(`force_delete = true` per CLAUDE.md global default). Lambda's
+`image_uri` pinned to an ECR **digest** (not a tag) via the
+`aws_ecr_image` data source pattern in CLAUDE.md, so pushes to the
+`:latest` tag don't silently bypass Terraform.
 
 #### Endpoint
 
-`POST /api/media/upload-url` (Cognito JWT required). Same `/api/*`
-prefix as the github-gateway routes — the unified
-`cms.brigitte-le-roux.com` CloudFront distribution (later plan) routes
-`/api/*` to the HTTP API.
-
-Request body:
-
-```json
-{
-  "filename": "foo.pdf",
-  "contentType": "application/pdf",
-  "folder": "pdfs/publications",
-  "size": 1234567
-}
-```
+`GET /api/media/s3-credentials` (Cognito JWT required). Same `/api/*`
+prefix as the github-gateway routes — both Lambdas hang off the shared
+`cms_trigger` HTTP API created in Plan 4/5.
 
 Response:
 
 ```json
 {
-  "uploadUrl": "https://<bucket>.s3.<region>.amazonaws.com/pdfs/publications/foo.pdf?X-Amz-...",
-  "publicPath": "/pdfs/publications/foo.pdf"
+  "access_key_id": "AKIA...",
+  "secret_access_key": "..."
 }
 ```
 
-#### Validation
+API Gateway's JWT authorizer rejects unauthenticated calls before they
+reach the Lambda. No additional validation in the Lambda — any
+authenticated CMS user can fetch the creds.
 
-- Folder against allowlist: `pdfs`, `pdfs/publications`, `pdfs/livres`,
-  `pdfs/livres/Reviews`, `img`, `data`. Anything else: 400.
-- Content-type against allowlist: `application/pdf`, `image/png`,
-  `image/jpeg`, `image/webp`, `application/vnd.ms-excel`,
-  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
-  `text/csv`, `text/plain`. Anything else: 400.
-- Filename normalization: spaces → underscores (matches existing project
-  convention, commit 6155f17).
-- Filename pattern after normalization: `[A-Za-z0-9._-]+`. Reject anything
-  else.
-- Size caps enforced two ways: (1) the caller declares `size` in the
-  request body and the Lambda rejects values above the per-type cap with
-  a 400 at request time; (2) the presigned PUT URL binds the exact
-  `ContentLength` in its signature, so S3 rejects PUTs whose body length
-  differs from the signed value (403). The original spec wording
-  "Content-Length range" implied a presigned POST form policy
-  (`content-length-range`); presigned PUT with bound `ContentLength`
-  gives equivalent enforcement with a simpler client wire format
-  (single PUT, no multipart form). Caps:
-  - PDF ≤ 50 MB
-  - Image ≤ 10 MB
-  - Data file ≤ 100 MB
-- Presigned URL TTL: 5 minutes.
+#### Dedicated IAM user for S3 uploads
 
-#### CloudFront cache invalidation
+A dedicated IAM user `brigitte-le-roux-website-sveltia-s3-uploader`
+with only `s3:PutObject` + `s3:ListBucket` on the three upload
+prefixes (`pdfs/*`, `img/*`, `data/*`). Nothing else — no read of
+other prefixes, no delete, no IAM, no CloudFront. If the creds leak,
+the attacker can upload files (potentially overwriting existing media)
+but cannot escalate or exfiltrate other site data.
 
-After signing, the Lambda triggers a CloudFront invalidation for the
-single path that's about to be uploaded. Cost: ~$0.005 per invalidation,
-free tier 1000/month, negligible.
+The user's long-lived access key + secret are stored in SSM
+SecureString at `brigitte-le-roux-website.sveltia-s3-credentials`
+(JSON: `{access_key_id, secret_access_key}`, default AWS-managed KMS
+key). Not managed by Terraform — created manually via
+`aws ssm put-parameter` after the IAM user's access key is generated.
 
-The file content itself never passes through the Lambda — the browser
-PUTs straight to S3 using the presigned URL.
+The media-manager Lambda reads this SSM parameter at cold start,
+caches the resulting JSON in module scope, and returns it on every
+authenticated request to the credentials endpoint.
 
-#### IAM execution role
+**Why long-lived credentials and not STS / Cognito Identity Pool?**
+Sveltia's S3 library doesn't currently support session tokens — its
+SigV4 implementation omits the `X-Amz-Security-Token` header that
+STS-issued credentials require, and its config has no `session_token`
+field. Long-lived creds are a temporary pragmatic choice. Mitigations:
 
-- `s3:PutObject` on `arn:aws:s3:::<bucket>/{pdfs,img,data}/*`
-- `cloudfront:CreateInvalidation` on the website distribution ARN
-- `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`
+- Tightly-scoped IAM (PutObject + ListBucket on 3 prefixes only)
+- Auto-distributed via the endpoint — the editor never enters creds
+- Centralized rotation: update SSM, force a Lambda cold start, all
+  browsers fetch the new creds on next refresh
+- The browser stores them in localStorage; an explicit logout step
+  in the Sveltia bootstrap clears that key
+
+**Upstream tracking:** opening a PR against Sveltia to add session-token
+support would be the right long-term fix; revisit once it lands.
+
+#### IAM execution role (Lambda)
+
+- `ssm:GetParameter` on the SecureString ARN (`brigitte-le-roux-website.sveltia-s3-credentials`)
+- `kms:Decrypt` on `aws/ssm`
+- Standard log perms (added by the `lambda-function` module)
+
+The Lambda execution role does NOT need any S3, CloudFront, or other
+permissions — it only reads the SecureString and returns the JSON.
 
 #### Logging
 
-- CloudWatch Log Group, 14-day retention.
-- Per upload, log: Cognito user email, filename (post-normalization),
-  content-type, claimed size, folder. Not file content.
+- CloudWatch Log Group, 14-day retention
+- Per request, log: Cognito user email (from JWT claims), route, response status
+- **Never log credential values** — the access key + secret never appear in logs
 
 ### S3 bucket CORS
 
@@ -583,38 +601,46 @@ cors_rule {
 
 The allowed origin is `cms.brigitte-le-roux.com` (where Sveltia lives) —
 not the public site `brigitte-le-roux.com`, which never initiates a PUT.
-Add `brigitte-le-roux.com` later only if the main site ever needs a
-browser-side upload UX.
+Sveltia uses these creds + SigV4 to PUT files directly browser → S3;
+the file bytes never traverse Lambda.
 
-Bucket stays private. Presigned URLs honour the signature without
-requiring public ACLs.
+Bucket stays private. CloudFront-fronted reads from the public site
+are unaffected — the bucket policy from Plan 6 already allows both
+CloudFront distributions.
 
-### Custom Sveltia media library plugin
+### Sveltia's built-in S3 media library
 
-`packages/website/public/cms/sveltia-s3-media.js`. ~150 lines of JS.
+Sveltia ships with native S3 support via its `media_libraries.aws_s3`
+config block; no custom JS plugin is needed (and not actually possible —
+see the design pivot note above). The CMS frontend configures Sveltia
+with the bucket name, region, prefix; the credentials are populated at
+runtime by a small bootstrap script that:
 
-- Implements Sveltia's media-library plugin interface.
-- On "Choose file":
-  1. Browser file picker → user picks a local file.
-  2. Plugin POSTs to `/api/media/upload-url` with metadata + Bearer Cognito token.
-  3. Plugin receives `uploadUrl` + `publicPath`.
-  4. Plugin issues `fetch(uploadUrl, { method: 'PUT', body: file })`.
-     Progress reported to Sveltia's built-in progress UI.
-  5. On success, returns `publicPath` to Sveltia, which inserts it into
-     the field being edited.
+1. Reads the Cognito id_token from localStorage (set by the OAuth shim
+   on login).
+2. Calls `GET /api/media/s3-credentials` with `Authorization: Bearer <id_token>`.
+3. Writes the `access_key_id` + `secret_access_key` into Sveltia's
+   localStorage key for S3 credentials (Sveltia's documented mechanism
+   for receiving user-entered credentials).
+4. Then loads Sveltia via `CMS.init()`.
+
+On logout the bootstrap clears the localStorage key. Bootstrap details
+live in Plan 8 (Sveltia frontend).
 
 Out of scope for v1:
 
-- **Browsing/picking existing media.** Sveltia cannot list S3 contents
-  through this plugin. The user either uploads new or pastes a known
-  path. Revisit if reuse becomes painful.
+- **Browsing/picking existing media.** Sveltia's UI does have a media
+  library browser, but it requires `s3:ListObjectsV2` which our IAM
+  user has only at the bucket level (not per-prefix). If the
+  browser-list flow misbehaves, scope tighter or disable it via
+  Sveltia config.
 - **Deleting media.** No DELETE endpoint is exposed by the
   media-manager. Replacing an existing file is supported (PUT to the
-  same key overwrites + invalidates CloudFront). Removing a file's
-  link from a page is supported (the user clears the field via the
-  github-gateway commit — the S3 object becomes orphaned but no longer
-  reachable from any page). Hard deletion of the underlying S3 object
-  is administrator-only via the AWS console — expected to be rare
+  same key overwrites). Removing a file's link from a page is
+  supported (the user clears the field via the github-gateway commit —
+  the S3 object becomes orphaned but no longer reachable from any
+  page). Hard deletion of the underlying S3 object is
+  administrator-only via the AWS console — expected to be rare
   (copyright takedown, etc.). Storage cost at this volume is
   negligible. If orphans accumulate enough to matter, a scheduled
   garbage-collection Lambda that diffs S3 against references in

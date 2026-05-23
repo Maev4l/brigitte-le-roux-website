@@ -1,5 +1,16 @@
 # media-manager Lambda + Shared HTTP API Route
 
+> **⚠️ SUPERSEDED (2026-05-23) — see Plan 7.** This plan's design
+> (presigned S3 PUT URLs) was abandoned during Plan 7 brainstorming
+> after we discovered Sveltia CMS doesn't support custom media library
+> plugins — Sveltia's only S3 path needs raw IAM credentials. Plan 7
+> refactors the media-manager Lambda to issue IAM credentials over
+> `GET /api/media/s3-credentials` instead (LWA + Hono container image).
+> This plan's tasks 1-9 were executed end-to-end (Lambda deployed,
+> smoke-tested), but the resulting endpoint + Lambda code are
+> replaced by Plan 7's refactor. Spec §4 has been rewritten for the
+> new design.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the `media-manager` Lambda — the second piece of the CMS backend. Sveltia sends an authenticated request describing the file it wants to upload (`filename`, `contentType`, `folder`, `size`); the Lambda validates against allowlists + size caps, generates a presigned S3 PUT URL (5-minute TTL), proactively invalidates the matching CloudFront path, and returns `{ uploadUrl, publicPath }`. The browser then PUTs the binary directly to S3 — file bytes never traverse Lambda.
