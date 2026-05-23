@@ -65,14 +65,20 @@ resource "aws_iam_policy" "github_gateway" {
 }
 
 # ---------------------------------------------------------------------------
-# media-manager Lambda. Signs presigned S3 PUT URLs and proactively
-# invalidates the CloudFront cache for the path about to be uploaded.
-# File bytes never traverse this Lambda.
+# media-manager Lambda (refactored in Plan 7 — LWA + Hono + ZIP).
+# Issues IAM credentials for Sveltia's built-in S3 media library via
+# GET /api/media/s3-credentials. AWS Lambda Web Adapter bridges API
+# Gateway events to a Hono HTTP server on localhost:8080 inside the
+# Lambda's Node 22 runtime.
 # ---------------------------------------------------------------------------
 
 locals {
   mediaManagerZip    = "../functions/media-manager/dist/media-manager.zip"
   mediaManagerBundle = "../functions/media-manager/dist/index.mjs"
+
+  # AWS-published public Lambda Layer. Pinned to :27 (current as of
+  # 2026-05-23). Bump deliberately when AWS publishes a newer version.
+  lwa_layer_arn = "arn:aws:lambda:${var.aws_region}:753240598075:layer:LambdaAdapterLayerArm64:27"
 }
 
 module "media_manager" {
@@ -85,42 +91,55 @@ module "media_manager" {
 
   additional_policy_arns = [aws_iam_policy.media_manager.arn]
 
+  # ZIP packaging — same as github-gateway. Handler is run.sh (a shell
+  # script that exec's `node index.mjs`); LWA's exec wrapper picks it
+  # up via AWS_LAMBDA_EXEC_WRAPPER. source_code_hash on the BUNDLED
+  # output (not the ZIP) so a fresh build with identical source
+  # doesn't trigger spurious updates.
   zip = {
     filename = local.mediaManagerZip
     runtime  = "nodejs22.x"
-    handler  = "index.handler"
+    handler  = "run.sh"
     hash     = filebase64sha256(local.mediaManagerBundle)
   }
 
+  # Attach the AWS Lambda Web Adapter layer (arm64). LWA boots before
+  # the user handler, listens for Lambda invocations, and proxies them
+  # as HTTP to the Hono server on :8080.
+  layers = [local.lwa_layer_arn]
+
   environment_variables = {
-    BUCKET_NAME                = aws_s3_bucket.site.id
-    CLOUDFRONT_DISTRIBUTION_ID = aws_cloudfront_distribution.site.id
+    # LWA bootstrap entry point — installed by the layer at /opt.
+    AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
+    # The SSM SecureString containing { access_key_id, secret_access_key }
+    MEDIA_MANAGER_CREDENTIALS_PARAM = "brigitte-le-roux-website.sveltia-media-manager-credentials"
+    # Hono binds to this port; LWA dials it on the same loopback.
+    PORT = "8080"
   }
 }
 
-# IAM policy: scoped to ONLY the prefixes Sveltia is allowed to upload to,
-# plus CreateInvalidation on the website distribution. Logs perms come
-# from the lambda-function module.
+# IAM policy: read the SSM SecureString holding the IAM-user creds,
+# decrypt via the default AWS-managed KMS key. No S3, no CloudFront —
+# those concerns moved to the dedicated IAM user that Sveltia uses
+# for browser-to-S3 uploads.
 data "aws_iam_policy_document" "media_manager" {
   statement {
     effect  = "Allow"
-    actions = ["s3:PutObject"]
+    actions = ["ssm:GetParameter"]
     resources = [
-      "${aws_s3_bucket.site.arn}/pdfs/*",
-      "${aws_s3_bucket.site.arn}/img/*",
-      "${aws_s3_bucket.site.arn}/data/*",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/brigitte-le-roux-website.sveltia-media-manager-credentials",
     ]
   }
   statement {
     effect    = "Allow"
-    actions   = ["cloudfront:CreateInvalidation"]
-    resources = [aws_cloudfront_distribution.site.arn]
+    actions   = ["kms:Decrypt"]
+    resources = ["arn:aws:kms:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alias/aws/ssm"]
   }
 }
 
 resource "aws_iam_policy" "media_manager" {
   name        = "brigitte-le-roux-website-media-manager"
-  description = "media-manager Lambda: PutObject on whitelisted S3 prefixes + CloudFront invalidations"
+  description = "media-manager Lambda: read sveltia-media-manager-credentials SSM SecureString"
   policy      = data.aws_iam_policy_document.media_manager.json
 }
 
@@ -166,7 +185,7 @@ module "cms_trigger" {
       function_arn  = module.media_manager.function_arn
       invoke_arn    = module.media_manager.invoke_arn
       routes = [
-        "POST /api/media/upload-url",
+        "GET /api/media/s3-credentials",
       ]
     }
   }

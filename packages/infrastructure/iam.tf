@@ -86,3 +86,50 @@ output "gha_website_deploy_role_arn" {
   value       = aws_iam_role.gha_website_deploy.arn
   description = "IAM role ARN to set in .github/workflows/deploy-website.yml"
 }
+
+# Dedicated IAM user that Sveltia's built-in S3 media library uses to
+# upload editor-supplied PDFs / images / data files into the website
+# bucket. Programmatic access only — no console login profile.
+#
+# The access key + secret are NOT managed by Terraform (would expose
+# them in state). They are created via `aws iam create-access-key`
+# after this resource is applied, and stored in SSM SecureString
+# `brigitte-le-roux-website.sveltia-media-manager-credentials` —
+# consumed by the media-manager Lambda at cold start.
+resource "aws_iam_user" "sveltia_media_manager" {
+  name = "brigitte-le-roux-website-sveltia-media-manager"
+  tags = {
+    purpose = "sveltia-cms-media-uploads"
+  }
+}
+
+data "aws_iam_policy_document" "sveltia_media_manager" {
+  # Sveltia's S3 library calls ListObjectsV2 to enumerate the prefix
+  # when the editor opens the media browser. Limit it to our three
+  # media prefixes via the s3:prefix condition.
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.site.arn]
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["pdfs/*", "img/*", "data/*"]
+    }
+  }
+  statement {
+    effect  = "Allow"
+    actions = ["s3:PutObject"]
+    resources = [
+      "${aws_s3_bucket.site.arn}/pdfs/*",
+      "${aws_s3_bucket.site.arn}/img/*",
+      "${aws_s3_bucket.site.arn}/data/*",
+    ]
+  }
+}
+
+resource "aws_iam_user_policy" "sveltia_media_manager" {
+  name   = "sveltia-media-manager-policy"
+  user   = aws_iam_user.sveltia_media_manager.name
+  policy = data.aws_iam_policy_document.sveltia_media_manager.json
+}
