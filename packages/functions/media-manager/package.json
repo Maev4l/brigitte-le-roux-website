@@ -1,18 +1,19 @@
 {
   "name": "media-manager",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Cognito-authenticated presigned-URL minter for browser → S3 media uploads",
+  "description": "Issues Sveltia's S3 upload credentials over an authenticated endpoint. Lambda Web Adapter + Hono.",
   "main": "index.mjs",
   "scripts": {
     "lint": "eslint .",
+    "dev": "node index.mjs",
     "build": "esbuild index.mjs --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --external:@aws-sdk/* --banner:js=\"import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);\""
   },
   "dependencies": {
-    "@aws-sdk/client-cloudfront": "3.687.0",
-    "@aws-sdk/client-s3": "3.687.0",
-    "@aws-sdk/s3-request-presigner": "3.687.0"
+    "@aws-sdk/client-ssm": "3.687.0",
+    "@hono/node-server": "1.13.7",
+    "hono": "4.6.12"
   },
   "devDependencies": {
     "@eslint/js": "9.15.0",

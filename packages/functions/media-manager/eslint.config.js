@@ -19,4 +19,8 @@ export default [
       'no-var': 'error',
     },
   },
+  {
+    // dist/ is the esbuild bundle output — not authored source.
+    ignores: ['node_modules/**', 'dist/**'],
+  },
 ];

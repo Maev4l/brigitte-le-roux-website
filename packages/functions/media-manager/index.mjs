@@ -1,73 +1,43 @@
-// Lambda handler: validates the upload request, signs an S3 PUT URL,
-// triggers a CloudFront invalidation, returns { uploadUrl, publicPath }.
+// Hono server bridging API Gateway events (via AWS Lambda Web Adapter)
+// to a standard HTTP handler on :8080. Cold start reads the IAM user's
+// access key + secret from SSM SecureString, caches them in module
+// scope, and serves them via GET /api/media/s3-credentials. The route
+// is gated by API Gateway's JWT authorizer (Cognito) before requests
+// reach this server — any authenticated CMS user can fetch the creds.
 
-import {
-  validateFolder,
-  validateContentType,
-  validateFilename,
-  validateSize,
-} from './lib/validation.mjs';
-import { signUploadUrl } from './lib/presigner.mjs';
-import { invalidatePath } from './lib/invalidator.mjs';
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 
-const BUCKET_NAME = process.env.BUCKET_NAME;
-const CLOUDFRONT_DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID;
+const ssm = new SSMClient({});
 
-const json = (statusCode, body) => ({
-  statusCode,
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify(body),
+let cachedCreds = null;
+
+const loadCreds = async () => {
+  if (cachedCreds) return cachedCreds;
+  const result = await ssm.send(
+    new GetParameterCommand({
+      Name: process.env.MEDIA_MANAGER_CREDENTIALS_PARAM,
+      WithDecryption: true,
+    }),
+  );
+  cachedCreds = JSON.parse(result.Parameter.Value);
+  return cachedCreds;
+};
+
+const app = new Hono();
+
+app.get('/api/media/s3-credentials', async (c) => {
+  try {
+    const creds = await loadCreds();
+    console.log(JSON.stringify({ event: 's3-credentials-issued' }));
+    return c.json(creds);
+  } catch (err) {
+    console.error('media-manager error', { message: err.message });
+    return c.json({ error: 'Failed to load credentials' }, 502);
+  }
 });
 
-export const handler = async (event) => {
-  try {
-    const claims = event.requestContext?.authorizer?.jwt?.claims;
-    if (!claims?.email) {
-      return json(401, { error: 'Missing email claim in JWT' });
-    }
-
-    const body = event.body ? JSON.parse(event.body) : {};
-    const { folder, contentType, filename, size } = body;
-
-    const folderResult = validateFolder(folder);
-    if (!folderResult.ok) return json(400, { error: folderResult.error });
-
-    const ctResult = validateContentType(contentType);
-    if (!ctResult.ok) return json(400, { error: ctResult.error });
-
-    const fnResult = validateFilename(filename);
-    if (!fnResult.ok) return json(400, { error: fnResult.error });
-
-    const sizeResult = validateSize(size, ctResult.value);
-    if (!sizeResult.ok) return json(400, { error: sizeResult.error });
-
-    const key = `${folderResult.value}/${fnResult.value}`;
-    const publicPath = `/${key}`;
-
-    const uploadUrl = await signUploadUrl({
-      bucket: BUCKET_NAME,
-      key,
-      contentType: ctResult.value,
-      contentLength: sizeResult.value,
-    });
-
-    await invalidatePath({
-      distributionId: CLOUDFRONT_DISTRIBUTION_ID,
-      path: publicPath,
-    });
-
-    // Structured log line — observable in CloudWatch, no file bytes.
-    console.log(JSON.stringify({
-      event: 'media-upload-signed',
-      user: claims.email,
-      key,
-      contentType: ctResult.value,
-      size: sizeResult.value,
-    }));
-
-    return json(200, { uploadUrl, publicPath });
-  } catch (err) {
-    console.error('media-manager error', err);
-    return json(502, { error: 'Upstream error', message: err.message });
-  }
-};
+const port = Number.parseInt(process.env.PORT || '8080', 10);
+serve({ fetch: app.fetch, port });
+console.log(`media-manager listening on :${port}`);
