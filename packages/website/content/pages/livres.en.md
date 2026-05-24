@@ -42,23 +42,23 @@ books:
       - reviewer: "J. Hjellbrekke"
         venue: "European Sociological Review"
         year: 2005
-        url: "/pdfs/livres/Reviews/Kl_Hjellbrekke.pdf"
+        url: "/data/Kl_Hjellbrekke.pdf"
       - reviewer: "B. Bru"
         venue: "Mathématiques & Sciences Humaines"
         year: 2005
-        url: "/pdfs/livres/Reviews/Kl_Bru.pdf"
+        url: "/data/Kl_Bru.pdf"
       - reviewer: "M. Selz"
         venue: "Bulletin de Méthodologie Sociologique"
         year: 2006
-        url: "/pdfs/livres/Reviews/Kl_MSelz.html"
+        url: "/data/Kl_MSelz.html"
       - reviewer: "F. Murtagh"
         venue: "Journal of Classification"
         year: 2008
-        url: "/pdfs/livres/Reviews/Kl_Fionn.pdf"
+        url: "/data/Kl_Fionn.pdf"
       - reviewer: "N. J. le Roux"
         venue: "Computational Statistics & Data Analysis"
         year: 2009
-        url: "/pdfs/livres/Reviews/Kl_CSDA.pdf"
+        url: "/data/Kl_CSDA.pdf"
   - slug: "ssh-exercices"
     title: "Statistique en Sciences Humaines : Exercices & Solutions"
     authors: ["Rouanet, H.","Le Roux, B."]
@@ -115,7 +115,7 @@ book_chapters:
     text_html: "Rouanet H., <strong>Le Roux B.</strong>, Bernard J.-M., Lecoutre B. (1998). The analysis of structured multidimensional data: From Euclidean Clouds to Bayesian Inference, chapter 8 of the book <em>New ways in statistical methodology: From Significance Tests to Bayesian Inference</em>, ed. H. Rouanet, foreword by P. Suppes (Stanford University), Berne, Peter Lang."
   - slug: "le-roux-rouanet-1998-interpreting-axes-mca"
     year: 1998
-    text_html: "<strong>Le Roux B.</strong>, Rouanet H. (1998). <a href=\"/pdfs/publications/Int_Axes.pdf\">Interpreting Axes in MCA: Method of the contributions of points and deviations</a>, in <em>Visualization of categorical data</em>, ed. J. Blasius &amp; M. Greenacre, Academic Press."
+    text_html: "<strong>Le Roux B.</strong>, Rouanet H. (1998). <a href=\"/data/Int_Axes.pdf\">Interpreting Axes in MCA: Method of the contributions of points and deviations</a>, in <em>Visualization of categorical data</em>, ed. J. Blasius &amp; M. Greenacre, Academic Press."
   - slug: "le-roux-rouanet-1996-introduction-approche-geometrique"
     year: 1996
     text_html: "<strong>Le Roux B.</strong>, Rouanet H. (1996). Introduction à l'approche géométrique de l'analyse des données multidimensionnelles, chapter IV of the tome \"Introduction à l'analyse des comparaisons et à l'analyse des données\", <em>Cours de Psychologie: 6. Processus &amp; applications</em> (master course), directed by R. Ghiglione &amp; J.-F. Richard, CNED-Dunod."

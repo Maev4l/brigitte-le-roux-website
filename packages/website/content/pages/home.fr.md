@@ -7,7 +7,7 @@ page_layout: home
 kicker: "Analyse géométrique des données · Recherche"
 deck_html: "Chercheuse en mathématiques. Analyse géométrique des données — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>et CEVIPOF&nbsp;/&nbsp;CNRS."
 portrait:
-  src: "/img/photoweb.jpg"
+  src: "/data/photoweb.jpg"
   alt: "Brigitte Le Roux"
 tiles:
   affiliations:

@@ -21,7 +21,7 @@ brigitte-leroux-website/
 │   │   ├── src/                       # Astro components, layouts, routes, styles
 │   │   ├── public/                    # static assets (mostly gitignored)
 │   │   │   ├── cms/                   # Sveltia frontend (git-tracked — carve-out)
-│   │   │   ├── pdfs/ data/ img/       # binaries (gitignored; S3 canonical)
+│   │   │   ├── data/                  # binaries (gitignored; S3 canonical)
 │   │   │   └── favicon.{svg,ico}      # tracked
 │   │   └── scripts/                   # deploy.sh, pull-public.sh
 │   ├── functions/                     # AWS Lambdas (Node.js 22, arm64)
@@ -62,7 +62,7 @@ yarn --cwd packages/website install        # one-time, in the Astro package
 
 yarn frontend:dev                          # dev server on http://localhost:4321
 yarn frontend:build                        # → packages/website/dist/
-yarn frontend:pull                         # sync public/{pdfs,data,img} down from S3
+yarn frontend:pull                         # sync public/data/ down from S3
 yarn frontend:deploy                       # build + S3 sync + CloudFront invalidate
 
 yarn backend:build                         # build Lambda ZIPs (esbuild + zip)
@@ -148,20 +148,27 @@ routes sort by `year` descending at build time — no manual ordering needed.
 
 ## Static assets
 
-`packages/website/public/` contains binaries served at URL root:
+`packages/website/public/data/` is a single **flat** prefix holding every
+binary served at URL root — PDFs, data files, images, archives — all
+addressed as `/data/<basename>`:
 
-- `public/pdfs/` → `/pdfs/foo.pdf`
-- `public/data/` → `/data/bar.xls`
-- `public/img/`  → `/img/photo.jpg`
+- `public/data/photoweb.jpg`              → `/data/photoweb.jpg`
+- `public/data/Kl_Hjellbrekke.pdf`        → `/data/Kl_Hjellbrekke.pdf`
+- `public/data/CognitiveTests.xls`        → `/data/CognitiveTests.xls`
 
-These three subdirectories are **gitignored** — S3 is the canonical store
-(some files exceed GitHub's 100 MB per-file limit). To repopulate locally:
+This directory is **gitignored** — S3 is the canonical store (some files
+exceed GitHub's 100 MB per-file limit), and Sveltia's S3 media library
+writes new uploads directly to S3 (not via git). To repopulate locally:
 
 ```bash
-yarn frontend:pull                  # sync all three subtrees
-yarn frontend:pull pdfs             # restrict to one subtree
+yarn frontend:pull                  # sync public/data/ from S3
 yarn frontend:pull --delete         # also delete files no longer in S3
 ```
+
+A flat layout (no subdirectories) is the convention here because Sveltia's
+S3 media picker shows one consolidated bucket. Filenames must be unique —
+disambiguate via descriptive names (e.g. `Reviews_Hjellbrekke_2005.pdf`,
+not just `review.pdf`).
 
 The Sveltia CMS frontend (`public/cms/`) IS tracked in git, because it's
 CODE rather than media — see `CLAUDE.md` for details.

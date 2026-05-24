@@ -88,7 +88,7 @@ publications:
     venue: "Sociology"
     type: "article"
     pages: "42, 1049-1071"
-    pdf: "/pdfs/publications/1050.pdf"
+    pdf: "/data/1050.pdf"
   - slug: "chiche-le-hay-le-roux-2008-espace-politique"
     year: 2008
     title: "The French political space on the eve of the 2007 presidential election"
@@ -103,7 +103,7 @@ publications:
     venue: "European Societies"
     type: "article"
     pages: "9(2), 245-273"
-    pdf: "/pdfs/publications/Norwegian_field_power.pdf"
+    pdf: "/data/Norwegian_field_power.pdf"
   - slug: "gounelle-le-roux-2007-jugement-pratique"
     year: 2007
     title: "Study of the structure of a practical judgement test by geometric data analysis"
@@ -132,7 +132,7 @@ publications:
     venue: "Mathématiques et Sciences Humaines"
     type: "article"
     pages: "40e année, no160, p.13-45 (pdf)"
-    pdf: "/pdfs/publications/regbis1.pdf"
+    pdf: "/data/regbis1.pdf"
   - slug: "chiche-le-roux-perrineau-rouanet-2000-espace-politique"
     year: 2000
     title: "The political space of French voters at the end of the 1990s: new and old cleavages, heterogeneity of electorates"
@@ -140,7 +140,7 @@ publications:
     venue: "Revue française de science politique"
     type: "article"
     pages: "Vol 50, no3"
-    pdf: "/pdfs/publications/rfsp_2000.pdf"
+    pdf: "/data/rfsp_2000.pdf"
     external: "https://www.persee.fr/doc/rfsp_0035-2950_2000_num_50_3_395484"
   - slug: "rouanet-ackermann-le-roux-2000-lesson-distinction"
     year: 2000
@@ -317,7 +317,7 @@ communications_title: "Communications, conferences"
 communications_international_title: "International"
 communications_international:
   - year: 2015
-    text_html: "<a href=\"http://www.carme-n.org/carme2015/\">CARME 2015</a> (Naples): Combinatorial Inference in Geometric Data Analysis (<a href=\"/pdfs/publications/Slides_CARME2015.pdf\">slides</a>)."
+    text_html: "<a href=\"http://www.carme-n.org/carme2015/\">CARME 2015</a> (Naples): Combinatorial Inference in Geometric Data Analysis (<a href=\"/data/Slides_CARME2015.pdf\">slides</a>)."
   - year: 2010
     text_html: "<a href=\"http://gfkl2010.wiwi.uni-karlsruhe.de/gfkl2010/\">GfKl 2010</a> (34th Annual Conference of the German Classification Society): Combinatorial Inference in Structured Geometric Data Analysis."
   - year: 2004

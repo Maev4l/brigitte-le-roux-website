@@ -40,7 +40,7 @@ Des ateliers ont eu lieu en France (MAP5/Université Paris Descartes, CEVIPOF/Sc
 | 2018 | [Visby](http://www.skeptron.uu.se/broady/sec/k-18-gda.htm) (Uppsala Université) | Suède |
 | 2017 | [Potsdam](https://profil-bildung-brandenburg.de/de/wipcad/news-events/events.html) | Allemagne |
 | 2013 | Mendoza | Argentine |
-| 2012 | [Berkeley](/pdfs/ateliers/GDA_Poster.pdf) | Californie, USA |
+| 2012 | [Berkeley](/data/GDA_Poster.pdf) | Californie, USA |
 | 2012 | Kaliningrad | Russie |
 | 2011 | [Lausanne](ateliers/Prg_Lausanne.pdf) | Suisse |
 | 2009 | Copenhague | Danemark |

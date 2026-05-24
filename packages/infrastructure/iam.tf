@@ -105,8 +105,9 @@ resource "aws_iam_user" "sveltia_media_manager" {
 
 data "aws_iam_policy_document" "sveltia_media_manager" {
   # Sveltia's S3 library calls ListObjectsV2 to enumerate the prefix
-  # when the editor opens the media browser. Limit it to our three
-  # media prefixes via the s3:prefix condition.
+  # when the editor opens the media browser. Scoped to the single
+  # `data/` prefix — the site uses a flat /data/<basename> URL space
+  # for every binary, so there's no need to authorise other prefixes.
   statement {
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
@@ -114,15 +115,13 @@ data "aws_iam_policy_document" "sveltia_media_manager" {
     condition {
       test     = "StringLike"
       variable = "s3:prefix"
-      values   = ["pdfs/*", "img/*", "data/*"]
+      values   = ["data/*"]
     }
   }
   statement {
     effect  = "Allow"
     actions = ["s3:PutObject"]
     resources = [
-      "${aws_s3_bucket.site.arn}/pdfs/*",
-      "${aws_s3_bucket.site.arn}/img/*",
       "${aws_s3_bucket.site.arn}/data/*",
     ]
   }

@@ -40,7 +40,7 @@ GDA workshops have taken place in France (MAP5/Université Paris Descartes, CEVI
 | 2018 | [Visby](http://www.skeptron.uu.se/broady/sec/k-18-gda.htm) (Uppsala University) | Sweden |
 | 2017 | [Potsdam](https://profil-bildung-brandenburg.de/de/wipcad/news-events/events.html) | Germany |
 | 2013 | Mendoza | Argentina |
-| 2012 | [Berkeley](/pdfs/ateliers/GDA_Poster.pdf) | California, USA |
+| 2012 | [Berkeley](/data/GDA_Poster.pdf) | California, USA |
 | 2012 | Kaliningrad | Russia |
 | 2011 | [Lausanne](ateliers/Prg_Lausanne.pdf) | Switzerland |
 | 2009 | Copenhagen | Denmark |

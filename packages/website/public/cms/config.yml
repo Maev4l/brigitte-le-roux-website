@@ -105,7 +105,7 @@ collections:
             widget: object
             i18n: true
             fields:
-              - { name: src, label: "Chemin de l'image (ex. /img/photo.jpg)", widget: string, i18n: duplicate }
+              - { name: src, label: "Chemin de l'image (ex. /data/photo.jpg)", widget: string, i18n: duplicate }
               - { name: alt, label: "Texte alternatif",                       widget: string, i18n: true }
           - name: tiles
             label: "Tuiles"

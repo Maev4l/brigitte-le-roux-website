@@ -38,7 +38,7 @@ Editor saves the page entry → github-gateway commits the markdown referencing 
 
 - Sveltia 0.163.0+ `media_libraries.aws_s3` config (built-in S3 media library; no plugins)
 - The OAuth shim from Plan 8 (`packages/website/public/cms/auth/index.html`) gains ~20 lines of pre-postMessage credential-fetch logic
-- The Sveltia config (`packages/website/public/cms/config.yml`) gets a new top-level `media_libraries.aws_s3` block (replaces the temp `media_folder: packages/website/public/img` workaround we added during Plan 8 smoke)
+- The Sveltia config (`packages/website/public/cms/config.yml`) gets a new top-level `media_libraries.aws_s3` block (replaces the temp `media_folder: packages/website/public/data` workaround we added during Plan 8 smoke)
 - No backend changes — media-manager Lambda already exists (Plan 7), credentials endpoint works, S3 CORS already allows the CMS subdomain (Plan 5)
 
 **Reference spec:** `docs/superpowers/specs/2026-05-20-content-editing-cms-design.md` §4 (media-manager Lambda + Sveltia S3 media library).
@@ -55,9 +55,9 @@ Editor saves the page entry → github-gateway commits the markdown referencing 
 
 ## Approach notes
 
-- **Single S3 prefix for v1.** Sveltia's `media_libraries.aws_s3.prefix` is global — all CMS uploads land at that one prefix. The IAM user's policy allows `PutObject` on `pdfs/*`, `img/*`, `data/*` (three prefixes), but Sveltia will only target one of them. v1 picks `img/` because it's the most common upload type for this editor (photos, illustrations). PDFs uploaded via the CMS will also land at `img/foo.pdf` — slightly off-convention but functional. Per-field `media_folder` overrides on the file widget MAY work in Sveltia (Decap supports it) — to be tested during smoke, NOT promised by this plan. Per-prefix routing is a follow-up if the trade-off becomes painful.
+- **Single flat S3 prefix `data/`.** Sveltia's `media_libraries.aws_s3.prefix` is global — all CMS uploads land at that one prefix. The site uses a single flat `/data/<basename>` URL space (set up in the pre-Plan-9 migration), so this matches the site convention rather than fighting it. PDFs, photos, archives — anything uploaded via the CMS lands at `s3://brigitte-le-roux-website/data/<filename>` and serves from `https://brigitte-le-roux.com/data/<filename>`. The IAM user is scoped to `data/*` only (tightened from the earlier `pdfs/*, img/*, data/*` allowlist).
 - **access_key_id is in `config.yml`** (hardcoded after one-time SSM fetch). It's public-ish (visible to anyone with /cms/config.yml access — which is anyone on the internet) but useless without the secret. The secret lives in localStorage via the auth shim. Trade-off: rotation requires both an SSM update AND a config.yml commit + deploy.
-- **Cleanup of Plan 8's temp `media_folder` workaround.** Plan 8 added a top-level `media_folder: packages/website/public/img` to keep Sveltia's config validator happy. With `media_libraries.aws_s3` present, Sveltia uses S3 instead of the Internal library and the top-level `media_folder` becomes dead config — we leave it in place as a fallback (Sveltia's Internal library would error closed via the path-allowlist on the github-gateway if anything ever fell back to it).
+- **Cleanup of Plan 8's temp `media_folder` workaround.** Plan 8 added a top-level `media_folder: packages/website/public/data` to keep Sveltia's config validator happy. With `media_libraries.aws_s3` present, Sveltia uses S3 instead of the Internal library and the top-level `media_folder` becomes dead config — we leave it in place as a fallback (Sveltia's Internal library would error closed via the path-allowlist on the github-gateway if anything ever fell back to it).
 - **CloudFront stale-cache after replace.** Replacing an uploaded file with the same name leaves the OLD content cached on CloudFront (CachingOptimized policy, default 24h TTL). Editor sees old content until cache expires unless we invalidate. Accept this for v1; add to follow-ups.
 
 ## File structure
@@ -65,8 +65,8 @@ Editor saves the page entry → github-gateway commits the markdown referencing 
 | File | Status | Responsibility |
 |---|---|---|
 | `packages/website/public/cms/auth/index.html` | modify | After Cognito SRP success, fetch `/api/media/s3-credentials` and write `secret_access_key` to `localStorage['sveltia-cms.prefs'].apiKeys.aws_s3`. ~20 lines added between the existing SRP success block and the existing postMessage handshake. |
-| `packages/website/public/cms/config.yml` | modify | Add a top-level `media_libraries.aws_s3` block with `bucket`, `region`, `prefix: img`, `access_key_id: <IAM user access key>`, `public_url: https://brigitte-le-roux.com`. |
-| `docs/superpowers/specs/2026-05-20-content-editing-cms-design.md` | modify | §4 now describes the realized media flow (credentials in localStorage via the shim, single-prefix S3 v1 limitation, etc.). |
+| `packages/website/public/cms/config.yml` | modify | Add a top-level `media_libraries.aws_s3` block with `bucket`, `region`, `prefix: data`, `access_key_id: <IAM user access key>`, `public_url: https://brigitte-le-roux.com`. |
+| `docs/superpowers/specs/2026-05-20-content-editing-cms-design.md` | modify | §4 now describes the realized media flow (credentials in localStorage via the shim, single flat `data/` prefix, etc.). |
 | `CLAUDE.md` | modify | Brief mention in the CMS section that media uploads are wired and where they land. |
 
 No new files, no infrastructure changes, no Lambda code changes.
@@ -276,8 +276,8 @@ Expected:
 Open `packages/website/public/cms/config.yml`. Find the existing top-level `media_folder` line (the temp workaround we added during Plan 8 smoke, around line 34):
 
 ```yaml
-media_folder: packages/website/public/img
-public_folder: /img
+media_folder: packages/website/public/data
+public_folder: /data
 ```
 
 REPLACE that block with:
@@ -285,22 +285,20 @@ REPLACE that block with:
 ```yaml
 # Top-level media_folder / public_folder are no longer the active path —
 # media_libraries.aws_s3 below takes precedence. We leave them set to
-# packages/website/public/img / /img as defense-in-depth: if Sveltia
+# packages/website/public/data / /data as defense-in-depth: if Sveltia
 # ever falls back to its Internal media library, a stray upload would
 # target the website's public/ tree and the github-gateway's path
 # allowlist would reject the commit (so editor sees an error rather
 # than silent success against an unintended location).
-media_folder: packages/website/public/img
-public_folder: /img
+media_folder: packages/website/public/data
+public_folder: /data
 
 # Plan 9: Sveltia's built-in S3 media library. The IAM user
 # `brigitte-le-roux-website-sveltia-media-manager` is scoped to
-# PutObject + ListBucket on s3://brigitte-le-roux-website/{pdfs,img,data}/*.
-# Sveltia uses a SINGLE prefix at a time — v1 picks `img` because most
-# editor uploads are photos / illustrations. PDFs uploaded via the CMS
-# land at /img/foo.pdf (off-convention but functional). Per-field
-# media_folder overrides on widgets MAY work to route specific fields
-# to other prefixes; that's a smoke-time discovery, not a v1 promise.
+# PutObject + ListBucket on s3://brigitte-le-roux-website/data/*.
+# All CMS uploads land at /data/<filename> — the site uses a single
+# flat /data/* URL space (set up in the pre-Plan-9 migration), so the
+# Sveltia prefix matches the site convention directly.
 #
 # The access_key_id below is half of the credential pair — visible to
 # anyone with internet access to /cms/config.yml. The secret lives in
@@ -313,7 +311,7 @@ media_libraries:
     access_key_id: <ACCESS_KEY_ID_FROM_TASK_2>
     bucket: brigitte-le-roux-website
     region: eu-central-1
-    prefix: img
+    prefix: data
     public_url: https://brigitte-le-roux.com
     force_path_style: false
 ```
@@ -328,7 +326,7 @@ node -e "const yaml=require('/Users/jrsue/dev/repos/brigitte-leroux-website/pack
 
 Expected:
 - `media_libraries keys: [ 'aws_s3' ]`
-- `aws_s3: { bucket: 'brigitte-le-roux-website', region: 'eu-central-1', prefix: 'img', public_url: 'https://brigitte-le-roux.com', access_key_starts_with: 'AKIA' }`
+- `aws_s3: { bucket: 'brigitte-le-roux-website', region: 'eu-central-1', prefix: 'data', public_url: 'https://brigitte-le-roux.com', access_key_starts_with: 'AKIA' }`
 
 ---
 
@@ -379,7 +377,7 @@ curl -sS https://cms.brigitte-le-roux.com/cms/auth/index.html | rtk proxy grep -
 ```
 
 Expected:
-- The media_libraries block printout shows `bucket: brigitte-le-roux-website`, `region: eu-central-1`, `prefix: img`, `public_url: https://brigitte-le-roux.com`, and the access_key_id starting with `AKIA`.
+- The media_libraries block printout shows `bucket: brigitte-le-roux-website`, `region: eu-central-1`, `prefix: data`, `public_url: https://brigitte-le-roux.com`, and the access_key_id starting with `AKIA`.
 - `fetchAndStashS3Credentials` count is 2.
 
 If the edge still serves stale content after 60 s, re-run the invalidation (or wait — CachingDisabled on /api/* doesn't mean CachingDisabled on /cms/*, which uses CachingOptimized).
@@ -419,7 +417,7 @@ Expected: all three log lines should report truthy / a 40-char length (don't pri
 
 - [ ] **Step 4: Open the home page entry**
 
-Click into **Page d'accueil** → home (FR/EN). Locate the portrait field (`src` + `alt` group). The `src` is currently a text field showing a path like `/img/photoweb.jpg`.
+Click into **Page d'accueil** → home (FR/EN). Locate the portrait field (`src` + `alt` group). The `src` is currently a text field showing a path like `/data/photoweb.jpg`.
 
 - [ ] **Step 5: Try uploading a new image**
 
@@ -427,14 +425,14 @@ Click the file/upload control next to the portrait `src` field (Sveltia auto-add
 
 - Show an upload progress indicator
 - Complete within a second or two
-- Insert the resulting URL into the `src` field — should look like `https://brigitte-le-roux.com/img/<test-filename>.png`
+- Insert the resulting URL into the `src` field — should look like `https://brigitte-le-roux.com/data/<test-filename>.png`
 
 - [ ] **Step 6: Verify the object landed in S3**
 
 In a terminal:
 
 ```bash
-aws s3 ls s3://brigitte-le-roux-website/img/ --recursive | rtk proxy grep '<test-filename>'
+aws s3 ls s3://brigitte-le-roux-website/data/ --recursive | rtk proxy grep '<test-filename>'
 ```
 
 Expected: one line with the test file's key, today's date, and the file size.
@@ -442,7 +440,7 @@ Expected: one line with the test file's key, today's date, and the file size.
 - [ ] **Step 7: Verify the public URL serves the file**
 
 ```bash
-curl -sSI 'https://brigitte-le-roux.com/img/<test-filename>.png' | head -3
+curl -sSI 'https://brigitte-le-roux.com/data/<test-filename>.png' | head -3
 ```
 
 Expected: HTTP 200 (or 302 → 200 if a redirect chain is involved). The content-type should match the file's MIME type.
@@ -454,7 +452,7 @@ Back in the Sveltia editor: undo the `src` field change (restore the original va
 Clean up the test file from S3:
 
 ```bash
-aws s3 rm s3://brigitte-le-roux-website/img/<test-filename>.png
+aws s3 rm s3://brigitte-le-roux-website/data/<test-filename>.png
 ```
 
 - [ ] **Step 9: Report**
@@ -484,7 +482,7 @@ Common failure modes + likely cause:
 In `docs/superpowers/specs/2026-05-20-content-editing-cms-design.md`, find the §4 section that describes how Sveltia consumes the credentials endpoint. Add a paragraph (or sub-section) noting:
 
 - The auth shim performs the cred-fetch + localStorage write at login time (not a separate bootstrap script).
-- v1 ships with a single S3 prefix (`img/`); per-field overrides are a follow-up.
+- All CMS uploads target a single flat `data/` prefix matching the site's `/data/<basename>` URL space.
 - Replacing an uploaded file with the same name leaves CloudFront serving the old cached content until TTL (default 24h) — known limitation.
 
 Quote the new code path:
@@ -505,19 +503,16 @@ In `CLAUDE.md`, find the section that mentions Sveltia (probably near the "Stati
 ### Media uploads (via the CMS)
 
 The editor uploads PDFs and images through Sveltia's built-in S3 media
-library. Files land at `s3://brigitte-le-roux-website/img/<filename>`
-and serve from `https://brigitte-le-roux.com/img/<filename>` (public-site
+library. Files land at `s3://brigitte-le-roux-website/data/<filename>`
+and serve from `https://brigitte-le-roux.com/data/<filename>` (public-site
 CloudFront, same as legacy uploads). Sveltia signs the S3 PUT directly
 from the browser using the IAM user `brigitte-le-roux-website-sveltia-media-manager`
-(scoped to PutObject + ListBucket on `pdfs/*`, `img/*`, `data/*` only).
+(scoped to PutObject + ListBucket on `data/*` only).
 The access_key_id is in `public/cms/config.yml`; the secret is fetched
 from the media-manager Lambda at login and stashed in localStorage —
 the editor never enters credentials.
 
 Limitations (v1, may be revisited):
-- Single S3 prefix (`img/`); all CMS uploads land there regardless of
-  semantic file type. PDFs uploaded via the CMS get `/img/foo.pdf` URLs
-  rather than `/pdfs/foo.pdf`.
 - Replacing an existing file with the same name shows stale content
   on the public site until CloudFront's TTL expires (24h default).
 ```
@@ -552,7 +547,7 @@ is already in place — the editor never enters credentials.
   New top-level media_libraries.aws_s3 block:
     - bucket: brigitte-le-roux-website
     - region: eu-central-1
-    - prefix: img
+    - prefix: data
     - public_url: https://brigitte-le-roux.com
     - access_key_id: AKIA... (the IAM user's access key — public-ish,
       useless without the secret)
@@ -562,11 +557,10 @@ is already in place — the editor never enters credentials.
   than a silent successful commit to an unintended location).
 
 End-to-end smoke test passed: editor uploaded a test PNG via the
-portrait field, file landed at s3://brigitte-le-roux-website/img/, URL
-served correctly from https://brigitte-le-roux.com/img/<filename>.
+portrait field, file landed at s3://brigitte-le-roux-website/data/, URL
+served correctly from https://brigitte-le-roux.com/data/<filename>.
 
-Known v1 limitations (documented in spec §4 + CLAUDE.md):
-- Single S3 prefix — all CMS uploads land in img/.
+Known v1 limitation (documented in spec §4 + CLAUDE.md):
 - Replacing a file with the same name shows stale content on the
   public site until CloudFront's 24h TTL expires.
 EOF
@@ -624,16 +618,14 @@ Wait for the run to complete: `gh run watch` (optional).
 | Credentials fetched at login from /api/media/s3-credentials | Task 3 (auth shim fetch) |
 | Secret stashed in Sveltia's localStorage prefs (apiKeys.aws_s3) | Task 3 |
 | access_key_id static in config.yml (rotation = SSM + config commit) | Task 4 |
-| IAM user scoped to PutObject + ListBucket on pdfs/* | img/* | data/* | (existing — Plan 7) |
+| IAM user scoped to PutObject + ListBucket on data/* | (existing — Plan 7) |
 | S3 bucket CORS allows cms.brigitte-le-roux.com | (existing — Plan 5) |
 | File bytes never traverse Lambda | (existing — Plan 7's design, validated here by Sveltia's direct S3 PUT) |
 | End-to-end smoke (upload + public URL serves) | Task 6 |
 
 **Out of scope** (handled in later plans / accepted as v1 limitations):
 
-- Per-field `media_folder` overrides (route PDFs to `pdfs/`, data files to `data/`). Status: smoke-time discovery; if Sveltia supports it natively, document the syntax in a follow-up commit. Else, plan a follow-up to add it via a custom field config or accept the limitation.
 - CloudFront cache invalidation on file-replace. v1 trade-off: editor sees stale content until 24h TTL. Possible mitigation: a small post-upload hook in Sveltia (unsupported) OR a follow-up Lambda that subscribes to S3 events and invalidates CloudFront paths.
-- Tightening the IAM user's policy to a single prefix (e.g., just `img/`) — only worth doing if we don't intend to ever expand to `pdfs/` and `data/`.
 - API hardening (Plan 10): force traffic through CloudFront via origin custom header. Independent of media uploads.
 
 **Placeholder scan:** every code step has a concrete code block; `<ACCESS_KEY_ID_FROM_TASK_2>` is the only placeholder, and it's marked as a hand-off from Task 2's output (NOT a "fill in later" — the value is recorded in Task 2 Step 1).

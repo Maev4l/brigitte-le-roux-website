@@ -645,11 +645,11 @@ authenticated CMS user can fetch the creds.
 #### Dedicated IAM user for S3 uploads
 
 A dedicated IAM user `brigitte-le-roux-website-sveltia-s3-uploader`
-with only `s3:PutObject` + `s3:ListBucket` on the three upload
-prefixes (`pdfs/*`, `img/*`, `data/*`). Nothing else — no read of
-other prefixes, no delete, no IAM, no CloudFront. If the creds leak,
-the attacker can upload files (potentially overwriting existing media)
-but cannot escalate or exfiltrate other site data.
+with only `s3:PutObject` + `s3:ListBucket` on the single upload prefix
+`data/*`. Nothing else — no read of other prefixes, no delete, no IAM,
+no CloudFront. If the creds leak, the attacker can upload files
+(potentially overwriting existing media) but cannot escalate or
+exfiltrate other site data.
 
 The user's long-lived access key + secret are stored in SSM
 SecureString at `brigitte-le-roux-website.sveltia-s3-credentials`

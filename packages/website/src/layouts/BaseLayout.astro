@@ -13,7 +13,7 @@ const metaDescription = description || strings.site.description;
 const metaKeywords = keywords || strings.site.keywords;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogLocale = locale === 'en' ? 'en_US' : 'fr_FR';
-const ogImage = new URL('/img/photoweb.jpg', Astro.site).href;
+const ogImage = new URL('/data/photoweb.jpg', Astro.site).href;
 
 // Derive the logical slug (content-collection key) from the current pathname:
 // strip the deploy base, strip the locale prefix, drop the trailing slash. The
