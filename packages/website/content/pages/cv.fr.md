@@ -1,5 +1,5 @@
 ---
-title: Curriculum Vitae - test
+title: Curriculum Vitae
 locale: fr
 slug: cv
 category: narrative
