@@ -1,9 +1,9 @@
 ---
-title: "Curriculum Vitae"
-locale: en
-slug: "cv"
+title: Curriculum Vitae
+locale: fr
+slug: cv
 category: narrative
-description: "Curriculum vitae of Brigitte Le Roux: education, academic career, professional activities, and honours."
+description: 'Curriculum vitae of Brigitte Le Roux: education, academic career, professional activities, and honours.'
 ---
 
 **Brigitte Le Roux**  

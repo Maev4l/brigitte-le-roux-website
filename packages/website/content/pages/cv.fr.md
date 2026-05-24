@@ -1,16 +1,17 @@
 ---
-title: "Curriculum Vitae"
+title: Curriculum Vitae - test
 locale: fr
-slug: "cv"
+slug: cv
 category: narrative
-description: "Curriculum vitae de Brigitte Le Roux : formation, carrière universitaire, responsabilités scientifiques et distinctions."
+description: 'Curriculum vitae de Brigitte Le Roux : formation, carrière universitaire, responsabilités scientifiques et distinctions.'
+keywords: ''
 ---
 
-**Brigitte Le Roux**  
-Laboratoire MAP5 — Université Paris Descartes  
+**Brigitte Le Roux**
+Laboratoire MAP5 — Université Paris Descartes
 45 Rue des Saints-Pères, 75006 Paris
 
----
+***
 
 ## Diplômes et titres universitaires
 
@@ -21,12 +22,12 @@ Laboratoire MAP5 — Université Paris Descartes
 - [Doctorat de Troisième Cycle](/these), spécialité Statistique — Faculté des Sciences de Paris (février 1970)
 - [Habilitation à diriger des recherches](/these) — Université Paris Dauphine (juin 2000), spécialité : Mathématiques appliquées (CNU section 26)
 
----
+***
 
 ## Carrière professionnelle
 
 | Poste | Période |
-|---|---|
+| --- | --- |
 | Collaboratrice technique de l'enseignement supérieur — Faculté des Sciences de Rennes | 1er oct. 1964 – 30 oct. 1965 |
 | Ingénieure à l'Institut de Statistique de Paris (contrat D.R.M.E.) | 1er nov. 1965 – 21 mars 1969 |
 | Ingénieure C.N.R.S. (3A, à mi-temps) | 21 mars 1969 – 30 mai 1971 |
@@ -40,22 +41,22 @@ Laboratoire MAP5 — Université Paris Descartes
 | Promotion *hors classe* au titre national (CNU) | octobre 1998 |
 | Mise à la retraite par limite d'âge | 1er septembre 2009 |
 
----
+***
 
 ## Insertion dans des équipes de recherche
 
-- **1981–1997** — Membre du *Groupe Mathématiques et Psychologie* (dirigé par H. Rouanet) — Université René Descartes (Paris 5) ; Unité de Recherche Associée au CNRS (section 29, janvier 1986 – décembre 1995), puis équipe d'accueil jusqu'au 31/12/1997.
+- **1981–1997** — Membre du _Groupe Mathématiques et Psychologie_ (dirigé par H. Rouanet) — Université René Descartes (Paris 5) ; Unité de Recherche Associée au CNRS (section 29, janvier 1986 – décembre 1995), puis équipe d'accueil jusqu'au 31/12/1997.
 - **1998–2001** — Membre du CRIP5 (Centre de Recherches en Informatique de Paris 5), Équipe d'accueil 2517 (responsable J.-M. Labat).
 - **depuis 2002** — Membre du MAP5 (Mathématiques Appliquées de Paris 5), CNRS FRE 2428 (responsable B. Ycart).
 
----
+***
 
 ## Responsabilités scientifiques
 
-- Membre du comité de rédaction de la revue [*Actes de la recherche en Sciences Sociales*](http://www.arss.fr/)
-- Rédacteur en chef de la revue [*Mathématiques et Sciences Humaines*](http://www.ehess.fr/revue-msh/)
+- Membre du comité de rédaction de la revue [_Actes de la recherche en Sciences Sociales_](http://www.arss.fr/)
+- Rédacteur en chef de la revue [_Mathématiques et Sciences Humaines_](http://www.ehess.fr/revue-msh/)
 
----
+***
 
 ## Distinctions
 
