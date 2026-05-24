@@ -1,0 +1,283 @@
+# Sveltia CMS configuration for brigitte-le-roux.com.
+#
+# Editor flow:
+#   1. Open https://cms.brigitte-le-roux.com/cms/.
+#   2. Sign in via Cognito (popup at /cms/auth/index.html — our OAuth shim).
+#   3. The id_token is used as a GitHub OAuth token by Sveltia; api_root
+#      below points at our github-gateway Lambda which proxies to
+#      api.github.com via a GitHub App installation.
+#   4. Edits are committed straight to main; deploy-website workflow
+#      picks them up and rebuilds the site.
+#
+# Media library: NOT configured here yet — Plan 9 adds media_libraries.aws_s3
+# once the credentials bootstrap is in place. Text-only editing for now.
+
+backend:
+  name: github
+  repo: Maev4l/brigitte-le-roux-website
+  branch: main
+  api_root: https://cms.brigitte-le-roux.com/api/git
+  base_url: https://cms.brigitte-le-roux.com/cms
+
+site_url: https://brigitte-le-roux.com
+display_url: https://brigitte-le-roux.com
+
+# Sveltia requires a top-level media_folder even when individual
+# collections override it (narrative_pages below sets media_folder: ""
+# explicitly, but Sveltia's config validator errors out without a
+# top-level default). Pointing it at packages/website/public/img is safe:
+# (1) the github-gateway path allowlist rejects any commit to
+# packages/website/public/* so a stray Internal-media upload would fail
+# closed at the proxy, and (2) Plan 9 adds media_libraries.aws_s3 which
+# supersedes the Internal media library entirely — uploads will go to
+# S3 directly, never through git.
+media_folder: packages/website/public/img
+public_folder: /img
+
+i18n:
+  structure: multiple_files
+  locales: [fr, en]
+  default_locale: fr
+
+publish_mode: simple
+
+collections:
+  # -------------------------------------------------------------------------
+  # 1. Narrative pages — Folder collection over packages/website/content/pages.
+  #
+  # The folder collection auto-discovers entries that have `category: narrative`
+  # in their frontmatter. home/livres/publications intentionally omit the field
+  # so Sveltia's filter excludes them — they have dedicated File collections
+  # below with richer structured fields.
+  #
+  # Layout (post-2026-05-24): pages/<slug>.<locale>.md (flat — slugs map 1:1
+  # to URLs). Bureau is FR-only (no .en.md) — Sveltia treats it as a
+  # partially-translated entry.
+  # -------------------------------------------------------------------------
+  - name: narrative_pages
+    label: "Pages"
+    label_singular: "Page"
+    folder: packages/website/content/pages
+    filter: { field: category, value: narrative }
+    media_folder: ""
+    public_folder: ""
+    create: false
+    delete: false
+    extension: md
+    format: frontmatter
+    # Use the global i18n config (structure: multiple_files, locales: [fr, en],
+    # default_locale: fr) — `true` inherits, whereas a per-collection object
+    # would override and risks missing locales/default_locale.
+    i18n: true
+    identifier_field: slug
+    summary: "{{slug}}"
+    fields:
+      - { name: title,       label: "Titre",             widget: string, i18n: true }
+      - { name: locale,      label: "Locale",            widget: hidden, i18n: duplicate }
+      - { name: slug,        label: "Slug",              widget: hidden, i18n: duplicate }
+      - { name: category,    label: "Category",          widget: hidden, i18n: duplicate, default: narrative }
+      - { name: description, label: "Description (SEO)", widget: string, required: false, i18n: true }
+      - { name: keywords,    label: "Mots-clés (SEO)",   widget: string, required: false, i18n: true }
+      - { name: body,        label: "Contenu",           widget: markdown, i18n: true }
+
+  # -------------------------------------------------------------------------
+  # 2. Home page — File collection, fr/en pair.
+  # -------------------------------------------------------------------------
+  - name: home_page
+    label: "Page d'accueil"
+    i18n: true
+    files:
+      - name: home
+        label: "Accueil (FR / EN)"
+        file: packages/website/content/pages/home.{{locale}}.md
+        i18n: true
+        fields:
+          - { name: title,       label: "Titre",       widget: string, i18n: true }
+          - { name: locale,      label: "Locale",      widget: hidden,  i18n: duplicate }
+          - { name: slug,        label: "Slug",        widget: hidden,  i18n: duplicate, default: home }
+          - { name: page_layout, label: "Layout",      widget: hidden,  i18n: duplicate, default: home }
+          - { name: description, label: "Description (SEO)", widget: string, required: false, i18n: true }
+          - { name: keywords,    label: "Mots-clés (SEO)",   widget: string, required: false, i18n: true }
+          - { name: kicker,      label: "Kicker",      widget: string,  i18n: true }
+          - { name: deck_html,   label: "Sous-titre (HTML autorisé : <br>, &nbsp;, <em>)", widget: text, i18n: true }
+          - name: portrait
+            label: "Portrait"
+            widget: object
+            i18n: true
+            fields:
+              - { name: src, label: "Chemin de l'image (ex. /img/photo.jpg)", widget: string, i18n: duplicate }
+              - { name: alt, label: "Texte alternatif",                       widget: string, i18n: true }
+          - name: tiles
+            label: "Tuiles"
+            widget: object
+            i18n: true
+            fields:
+              - name: affiliations
+                label: "Affiliations"
+                widget: object
+                i18n: true
+                fields:
+                  - { name: title,     label: "Titre",        widget: string, i18n: true }
+                  - { name: body_html, label: "Corps (HTML)", widget: text,   i18n: true }
+                  - { name: note,      label: "Note",         widget: string, required: false, i18n: true }
+              - name: methodes
+                label: "Méthodes"
+                widget: object
+                i18n: true
+                fields:
+                  - { name: title, label: "Titre", widget: string, i18n: true }
+                  - name: items
+                    label: "Liste"
+                    widget: list
+                    i18n: true
+                    fields:
+                      - { name: label, label: "Libellé",      widget: string, i18n: true }
+                      - { name: ab,    label: "Abréviation",  widget: string, i18n: true }
+              - name: nouveau
+                label: "Nouveau"
+                widget: object
+                i18n: true
+                fields:
+                  - { name: title,      label: "Titre",            widget: string, i18n: true }
+                  - { name: book_title, label: "Titre du livre",   widget: string, i18n: true }
+                  - { name: book_href,  label: "Lien du livre",    widget: string, i18n: duplicate }
+                  - { name: book_meta,  label: "Métadonnées",      widget: string, i18n: true }
+          - { name: body, label: "Bio (corps de page)", widget: markdown, i18n: true }
+
+  # -------------------------------------------------------------------------
+  # 3. Books listing page — fr/en pair with inlined `books` array + side
+  #    sections (translated_books, book_chapters, data_sets_link_html).
+  # -------------------------------------------------------------------------
+  - name: books_page
+    label: "Livres"
+    i18n: true
+    files:
+      - name: books
+        label: "Page des livres (FR / EN)"
+        file: packages/website/content/pages/livres.{{locale}}.md
+        i18n: true
+        fields:
+          - { name: title,       label: "Titre",       widget: string, i18n: true }
+          - { name: locale,      label: "Locale",      widget: hidden, i18n: duplicate }
+          - { name: slug,        label: "Slug",        widget: hidden, i18n: duplicate, default: livres }
+          - { name: page_layout, label: "Layout",      widget: hidden, i18n: duplicate, default: books }
+          - { name: description, label: "Description (SEO)", widget: string, required: false, i18n: true }
+          - { name: keywords,    label: "Mots-clés (SEO)",   widget: string, required: false, i18n: true }
+          - name: books
+            label: "Livres"
+            widget: list
+            i18n: true
+            summary: "{{fields.year}} · {{fields.title}}"
+            fields:
+              - { name: slug,             label: "Slug",                          widget: string, i18n: duplicate }
+              - { name: title,            label: "Titre",                         widget: string, i18n: true }
+              - { name: authors,          label: "Auteurs",                       widget: list,   i18n: duplicate }
+              - { name: year,             label: "Année",                         widget: number, value_type: int, i18n: duplicate }
+              - { name: publisher,        label: "Éditeur",                       widget: string, i18n: duplicate }
+              - { name: isbn,             label: "ISBN",                          widget: string, required: false, i18n: duplicate }
+              - { name: cover,            label: "Couverture (chemin image)",     widget: string, required: false, i18n: duplicate }
+              - { name: page_slug,        label: "Slug page détail",              widget: string, required: false, i18n: duplicate }
+              - { name: external,         label: "Lien externe",                  widget: string, required: false, i18n: duplicate }
+              - { name: book_review_url,  label: "URL recension (1 lien)",        widget: string, required: false, i18n: true }
+              - name: reviews
+                label: "Recensions archivées"
+                widget: list
+                required: false
+                i18n: duplicate
+                summary: "{{fields.reviewer}} · {{fields.venue}} ({{fields.year}})"
+                fields:
+                  - { name: reviewer, label: "Recenseur", widget: string }
+                  - { name: venue,    label: "Revue",     widget: string }
+                  - { name: year,     label: "Année",     widget: number, value_type: int }
+                  - { name: url,      label: "URL",       widget: string }
+          - { name: translated_books_title, label: "Titre — Livres traduits", widget: string, required: false, i18n: true }
+          - name: translated_books
+            label: "Livres traduits"
+            widget: list
+            required: false
+            i18n: duplicate
+            summary: "{{fields.year}}"
+            fields:
+              - { name: year,      label: "Année",                widget: number, value_type: int }
+              - { name: text_html, label: "Citation (HTML libre)", widget: text }
+          - { name: book_chapters_title, label: "Titre — Chapitres dans des ouvrages collectifs", widget: string, required: false, i18n: true }
+          - name: book_chapters
+            label: "Chapitres dans des ouvrages collectifs"
+            widget: list
+            required: false
+            i18n: duplicate
+            summary: "{{fields.year}} · {{fields.slug}}"
+            fields:
+              - { name: slug,      label: "Slug",                  widget: string }
+              - { name: year,      label: "Année",                 widget: number, value_type: int }
+              - { name: text_html, label: "Citation (HTML libre)", widget: text }
+          - { name: data_sets_link_html, label: "Lien vers les fichiers de données (HTML libre)", widget: text, required: false, i18n: true }
+
+  # -------------------------------------------------------------------------
+  # 4. Publications listing page — fr/en pair with inlined `publications`
+  #    array + technical_reports + communications (intl + nat).
+  # -------------------------------------------------------------------------
+  - name: publications_page
+    label: "Publications"
+    i18n: true
+    files:
+      - name: publications
+        label: "Page des publications (FR / EN)"
+        file: packages/website/content/pages/publications.{{locale}}.md
+        i18n: true
+        fields:
+          - { name: title,       label: "Titre",       widget: string, i18n: true }
+          - { name: locale,      label: "Locale",      widget: hidden, i18n: duplicate }
+          - { name: slug,        label: "Slug",        widget: hidden, i18n: duplicate, default: publications }
+          - { name: page_layout, label: "Layout",      widget: hidden, i18n: duplicate, default: publications }
+          - { name: description, label: "Description (SEO)", widget: string, required: false, i18n: true }
+          - { name: keywords,    label: "Mots-clés (SEO)",   widget: string, required: false, i18n: true }
+          - { name: intro_link_html, label: "Lien d'introduction (HTML libre)", widget: text, required: false, i18n: true }
+          - name: publications
+            label: "Publications"
+            widget: list
+            i18n: true
+            summary: "{{fields.year}} · {{fields.title}}"
+            fields:
+              - { name: slug,           label: "Slug",                widget: string, i18n: duplicate }
+              - { name: year,           label: "Année",               widget: number, value_type: int, i18n: duplicate }
+              - { name: title,          label: "Titre",               widget: string, i18n: true }
+              - { name: authors,        label: "Auteurs",             widget: list,   i18n: duplicate }
+              - { name: venue,          label: "Revue / éditeur",     widget: string, i18n: true }
+              - { name: type,           label: "Type",                widget: select, options: [article, book, chapter, slides], i18n: duplicate }
+              - { name: pages,          label: "Pages / numéro",      widget: string, required: false, i18n: true }
+              - { name: pdf,            label: "Chemin PDF",          widget: string, required: false, i18n: duplicate }
+              - { name: external,       label: "Lien externe",        widget: string, required: false, i18n: duplicate }
+              - { name: see_book_slug,  label: "Cross-ref slug livre", widget: string, required: false, i18n: duplicate }
+              - { name: see_book_label, label: "Cross-ref libellé",   widget: string, required: false, i18n: true }
+          - { name: technical_reports_title, label: "Titre — Rapports techniques", widget: string, required: false, i18n: true }
+          - name: technical_reports
+            label: "Rapports techniques"
+            widget: list
+            required: false
+            i18n: duplicate
+            summary: "{{fields.year}}"
+            fields:
+              - { name: year,      label: "Année",                widget: number, value_type: int }
+              - { name: text_html, label: "Citation (HTML libre)", widget: text }
+          - { name: communications_title, label: "Titre — Communications", widget: string, required: false, i18n: true }
+          - { name: communications_international_title, label: "Titre — Communications internationales", widget: string, required: false, i18n: true }
+          - name: communications_international
+            label: "Communications internationales"
+            widget: list
+            required: false
+            i18n: duplicate
+            summary: "{{fields.year}}"
+            fields:
+              - { name: year,      label: "Année",                widget: number, value_type: int }
+              - { name: text_html, label: "Citation (HTML libre)", widget: text }
+          - { name: communications_national_title, label: "Titre — Communications nationales", widget: string, required: false, i18n: true }
+          - name: communications_national
+            label: "Communications nationales"
+            widget: list
+            required: false
+            i18n: duplicate
+            summary: "{{fields.year}}"
+            fields:
+              - { name: year,      label: "Année",                widget: number, value_type: int }
+              - { name: text_html, label: "Citation (HTML libre)", widget: text }

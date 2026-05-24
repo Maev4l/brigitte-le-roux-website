@@ -22,6 +22,14 @@ packages/website/public/*
 !packages/website/public/favicon.ico
 !packages/website/public/apple-touch-icon.png
 
+# CMS frontend — Sveltia loader + editorial config + OAuth shim. This is
+# CODE (HTML, JS, YAML), not media, so it belongs in source control.
+# Without this carve-out, `aws s3 sync --delete` during yarn frontend:deploy
+# could wipe these files from S3 if a build runs against an empty local
+# public/cms/ (we hit this during Plan 8 smoke testing).
+!packages/website/public/cms/
+!packages/website/public/cms/**
+
 # OS
 .DS_Store
 Thumbs.db

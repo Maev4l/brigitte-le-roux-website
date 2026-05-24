@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CMS sign-in</title>
+  <style>
+    :root {
+      --bg: #f5efe6;
+      --fg: #1a1a1a;
+      --kicker: #c8553d;
+      --field-bg: #fff;
+      --field-border: #ddd;
+      --error: #b04a3a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      max-width: 22rem;
+      margin: 2rem auto 0;
+      background: var(--field-bg);
+      border-radius: 8px;
+      padding: 2rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    h1 {
+      font-size: 1.1rem;
+      margin: 0 0 1.5rem;
+      color: var(--kicker);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin: 1rem 0 0.25rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--field-border);
+      border-radius: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.7rem;
+      border: none;
+      border-radius: 4px;
+      background: var(--kicker);
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .error {
+      color: var(--error);
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      min-height: 1.2em;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>CMS sign-in</h1>
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" required autofocus />
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+      <button id="submit" type="submit">Sign in</button>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+    <p class="hint">Closes automatically after sign-in.</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
+  <script>
+    // ---- Configuration (public values; no secrets) -----------------------
+    var USER_POOL_ID = 'eu-central-1_d777fmVps';
+    var APP_CLIENT_ID = '5hk4h6m90mih8j055929bk1adc';
+    var REGION = 'eu-central-1';
+
+    // ---- Read the OAuth params Sveltia opened us with --------------------
+    var params = new URLSearchParams(window.location.search);
+    var provider = params.get('provider') || 'github';
+
+    var form = document.getElementById('login-form');
+    var submit = document.getElementById('submit');
+    var errorBox = document.getElementById('error');
+
+    function postToOpener(message) {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(message, '*');
+      }
+    }
+
+    function postAuthorizationSuccess(idToken) {
+      var payload = JSON.stringify({ provider: provider, token: idToken });
+      postToOpener('authorization:' + provider + ':success:' + payload);
+    }
+
+    function postAuthorizationError(message, code) {
+      var payload = JSON.stringify({ provider: provider, error: message, errorCode: code || 'AUTH_ERROR' });
+      postToOpener('authorization:' + provider + ':error:' + payload);
+    }
+
+    function authenticate(email, password) {
+      return new Promise(function (resolve, reject) {
+        var pool = new AmazonCognitoIdentity.CognitoUserPool({
+          UserPoolId: USER_POOL_ID,
+          ClientId: APP_CLIENT_ID,
+        });
+        var user = new AmazonCognitoIdentity.CognitoUser({
+          Username: email,
+          Pool: pool,
+        });
+        var authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+          Username: email,
+          Password: password,
+        });
+        user.authenticateUser(authDetails, {
+          onSuccess: function (session) {
+            resolve(session.getIdToken().getJwtToken());
+          },
+          onFailure: function (err) {
+            reject(err);
+          },
+          newPasswordRequired: function () {
+            reject(new Error('Initial password change required — sign in via the AWS console once, then retry here.'));
+          },
+        });
+      });
+    }
+
+    postToOpener('authorizing:' + provider);
+
+    var sveltiaReady = false;
+    window.addEventListener('message', function (e) {
+      if (typeof e.data === 'string' && e.data === 'authorizing:' + provider) {
+        sveltiaReady = true;
+      }
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      errorBox.textContent = '';
+      submit.disabled = true;
+      submit.textContent = 'Signing in…';
+
+      try {
+        var email = document.getElementById('email').value.trim();
+        var password = document.getElementById('password').value;
+        var idToken = await authenticate(email, password);
+
+        var deadline = Date.now() + 2000;
+        while (!sveltiaReady && Date.now() < deadline) {
+          await new Promise(function (r) { setTimeout(r, 50); });
+        }
+
+        postAuthorizationSuccess(idToken);
+
+        try {
+          localStorage.setItem('cms.cognito_id_token', idToken);
+        } catch (_) { /* ignore quota errors */ }
+
+        setTimeout(function () { window.close(); }, 200);
+      } catch (err) {
+        var message = (err && err.message) ? err.message : 'Sign-in failed';
+        errorBox.textContent = message;
+        postAuthorizationError(message, (err && err.code) ? err.code : 'AUTH_ERROR');
+        submit.disabled = false;
+        submit.textContent = 'Sign in';
+      }
+    });
+  </script>
+</body>
+</html>

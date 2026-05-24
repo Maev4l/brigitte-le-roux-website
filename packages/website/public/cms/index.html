@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CMS · brigitte-le-roux.com</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .booting {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; color: #666; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="booting" class="booting">Loading CMS…</div>
+
+  <script>
+    // Sveltia auto-init pulls config from /config.yml by default. We
+    // manual-init so Plan 9 can inject runtime credentials into the config.
+    window.CMS_MANUAL_INIT = true;
+  </script>
+  <script src="https://unpkg.com/@sveltia/cms@0.163.0/dist/sveltia-cms.js"></script>
+  <script>
+    // Load /cms/config.yml ourselves, hand the parsed object to CMS.init.
+    // (Sveltia ships with a YAML parser internally; we use fetch + the
+    // CMS library's own parsing via load_config_file: true at first to
+    // keep the loader minimal. If Plan 9 needs runtime injection we
+    // switch to fetch + js-yaml parse here.)
+    document.getElementById('booting').textContent = 'Initialising Sveltia…';
+    window.CMS.init();
+  </script>
+</body>
+</html>
