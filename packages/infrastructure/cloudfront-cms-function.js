@@ -22,6 +22,13 @@ function handler(event) {
     return { statusCode: 404, statusDescription: 'Not Found' };
   }
 
+  // Special-case the OAuth shim — it's a static directory at /cms/auth/,
+  // not part of the SPA. Serve directly from S3 without the SPA fallback.
+  if (uri === '/cms/auth' || uri === '/cms/auth/') {
+    request.uri = '/cms/auth/index.html';
+    return request;
+  }
+
   if (uri === '/cms' || uri === '/cms/') {
     request.uri = '/cms/index.html';
     return request;
@@ -29,7 +36,8 @@ function handler(event) {
 
   // /cms/<anything>. If the last path segment lacks an extension we treat
   // it as an SPA route and serve the shell so client-side routing takes
-  // over. Files like /cms/assets/main.abc.js still resolve to S3 directly.
+  // over. Files like /cms/assets/main.abc.js or /cms/auth/foo.css resolve
+  // to S3 directly.
   var lastSegment = uri.split('/').pop();
   if (lastSegment.indexOf('.') === -1) {
     request.uri = '/cms/index.html';

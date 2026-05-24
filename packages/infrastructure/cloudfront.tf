@@ -104,6 +104,19 @@ resource "aws_cloudfront_function" "cms_router" {
   code    = file("${path.module}/cloudfront-cms-function.js")
 }
 
+# Rewrites the Authorization header from `token <jwt>` (the format
+# Sveltia's GitHub backend uses by default) to `Bearer <jwt>` (the format
+# API Gateway's Cognito JWT authorizer requires). Without this, every
+# request from Sveltia would be rejected with 401 before reaching the
+# github-gateway Lambda. Attached to the /api/* behavior only.
+resource "aws_cloudfront_function" "cms_api_auth_rewriter" {
+  name    = "${var.bucket_name}-cms-api-auth-rewriter"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite Authorization: token -> Bearer for the /api/* path"
+  publish = true
+  code    = file("${path.module}/cloudfront-api-auth-function.js")
+}
+
 # The API Gateway hostname (no https:// prefix), extracted from the module
 # output so the distribution updates if the API ID ever changes.
 locals {
@@ -173,6 +186,14 @@ resource "aws_cloudfront_distribution" "cms" {
     # header, query string, body, cookies) EXCEPT Host. API Gateway must
     # see its own Host header to route the request to the right API.
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+
+    # Rewrites `Authorization: token <jwt>` (Sveltia's default for the
+    # GitHub backend) -> `Authorization: Bearer <jwt>` so API Gateway's
+    # JWT authorizer recognises it.
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.cms_api_auth_rewriter.arn
+    }
   }
 
   restrictions {
