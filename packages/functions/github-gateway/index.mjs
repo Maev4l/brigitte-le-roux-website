@@ -163,10 +163,19 @@ export const handler = async (event) => {
       finalBody = injectCommitAuthor(requestBody, claims.email);
     }
 
+    // API Gateway HTTP API v2 splits the request URL into rawPath +
+    // rawQueryString — Octokit needs both. Without re-appending the
+    // query string, calls like /git/trees/<sha>?recursive=1 lose the
+    // recursion flag and GitHub returns only the root tree → Sveltia
+    // sees no files in nested folders and silently renders "0 entries".
+    const finalUrl = event.rawQueryString
+      ? `${githubPath}?${event.rawQueryString}`
+      : githubPath;
+
     const octokit = await getOctokit();
     const response = await octokit.request({
       method,
-      url: githubPath,
+      url: finalUrl,
       data: finalBody,
       headers: { accept: 'application/vnd.github+json' },
     });
