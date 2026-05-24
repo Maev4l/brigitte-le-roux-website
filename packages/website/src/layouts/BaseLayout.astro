@@ -18,7 +18,7 @@ const ogImage = new URL('/img/photoweb.jpg', Astro.site).href;
 // Derive the logical slug (content-collection key) from the current pathname:
 // strip the deploy base, strip the locale prefix, drop the trailing slash. The
 // sentinel value `home` is used because the home page has no folder name in the
-// URL but its content lives under `content/pages/home/`. Duplicated in
+// URL but its content lives at `content/pages/home.<locale>.md`. Duplicated in
 // src/components/LanguagePicker.astro by design — only two callers and the rules
 // are tightly bound to this site's URL layout, so a shared helper would add a
 // file without proportionate value. Keep the two copies in sync if changed.
@@ -32,8 +32,8 @@ const slug = locale === 'fr'
 
 // Suppress hreflang for locales whose page doesn't exist (e.g. `bureau` is FR-only).
 const allPages = import.meta.glob('../../content/pages/**/*.md', { eager: true });
-const frExists = `../../content/pages/${slug}/fr.md` in allPages;
-const enExists = `../../content/pages/${slug}/en.md` in allPages;
+const frExists = `../../content/pages/${slug}.fr.md` in allPages;
+const enExists = `../../content/pages/${slug}.en.md` in allPages;
 
 const frUrl = new URL(slug === 'home' ? '/' : `/${slug}/`, Astro.site).href;
 const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).href;

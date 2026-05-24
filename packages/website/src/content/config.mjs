@@ -20,8 +20,9 @@ const bookItem = z.object({
   publisher: z.string(),
   isbn: z.string().nullable().optional(),
   cover: z.string().nullable().optional(),
-  // page_slug points at a detail page under content/pages/<page_slug>/
-  // when the book warrants one (e.g. "livres/cigda"). Omitted = listing only.
+  // page_slug points at a detail page under content/pages/<page_slug>.<locale>.md
+  // (or under the parent listing folder for detail pages) when the book warrants
+  // one (e.g. "livres/cigda"). Omitted = listing only.
   page_slug: z.string().nullable().optional(),
   external: z.string().nullable().optional(),
   // A single external "book review" link (one URL to a reviewing article on
@@ -65,9 +66,10 @@ const pages = defineCollection({
   loader: glob({
     pattern: '**/*.md',
     base: './content/pages',
-    // Generate IDs as "folder/locale" (e.g. "home/fr", "publications/en")
-    // so we can look them up by locale. Without this, the loader would use
-    // the frontmatter `slug` field, causing duplicate IDs for fr/en pairs.
+    // Generate IDs as "<path-without-extension>" (e.g. "home.fr",
+    // "cv.fr", "livres/cigda.fr") so we can look them up by locale.
+    // Without this, the loader would use the frontmatter `slug` field,
+    // causing duplicate IDs for fr/en pairs.
     generateId: ({ entry }) => entry.replace(/\.md$/, '')
   }),
   schema: z.object({
@@ -77,7 +79,7 @@ const pages = defineCollection({
     description: z.string().optional(),
     keywords: z.string().optional(),
     // Inlined listing arrays carried by the listing pages themselves
-    // (content/pages/livres/{fr,en}.md and content/pages/publications/{fr,en}.md).
+    // (content/pages/livres.{fr,en}.md and content/pages/publications.{fr,en}.md).
     // One source of truth per locale: edit the page, the listing updates.
     books: z.array(bookItem).optional(),
     publications: z.array(publicationItem).optional(),
@@ -120,6 +122,12 @@ const pages = defineCollection({
     // NOTE: "layout" is a reserved Astro frontmatter key that Vite resolves
     // as a component import path — using "page_layout" avoids that.
     page_layout: z.enum(['home', 'books', 'publications']).optional(),
+    // Optional discriminator for the narrative-pages CMS collection.
+    // Sveltia's filter (filter: { field: category, value: narrative })
+    // includes only entries with this field — home/livres/publications
+    // intentionally omit it so they don't appear in the narrative-pages
+    // collection alongside their dedicated File collections.
+    category: z.enum(['narrative']).optional(),
     kicker: z.string().optional(),
     deck_html: z.string().optional(),
     portrait: z.object({

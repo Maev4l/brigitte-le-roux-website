@@ -2,6 +2,7 @@
 title: "Research activities"
 locale: en
 slug: "recherches"
+category: narrative
 description: "Research themes in Geometric Data Analysis: foundations, MCA, structured data analysis, combinatorial inference and applications."
 ---
 

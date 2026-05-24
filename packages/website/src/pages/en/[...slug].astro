@@ -6,20 +6,31 @@ import BooksLayout from '../../layouts/BooksLayout.astro';
 import PublicationsLayout from '../../layouts/PublicationsLayout.astro';
 
 export async function getStaticPaths() {
-  const all = import.meta.glob('../../../content/pages/**/en.md', { eager: true });
+  // After the 2026-05-24 layout flip, the content tree is fully flat:
+  //   pages/home.en.md, pages/cv.en.md, pages/livres.en.md, …    (top-level)
+  //   pages/livres/cigda.en.md, pages/publications/lesson-distinction.en.md, …   (detail)
+  //
+  // The relative path under `content/pages/` (sans `.en.md`) IS the URL
+  // slug — no prefix-stripping needed.
+  const all = import.meta.glob('../../../content/pages/**/*.en.md', { eager: true });
   return Object.keys(all).map(path => {
-    const slug = path
+    const id = path
       .replace('../../../content/pages/', '')
-      .replace('/en.md', '');
-    return { params: { slug: slug === 'home' ? undefined : slug } };
+      .replace(/\.en\.md$/, '');
+    return {
+      params: { slug: id === 'home' ? undefined : id },
+      props: { entryId: id },
+    };
   });
 }
 
-const { slug } = Astro.params;
-const lookup = (slug ?? 'home') + '/en';
-const entry = await getEntry('pages', lookup);
-if (!entry) throw new Error(`Page not found: ${lookup}`);
+const { entryId } = Astro.props;
+const entry = await getEntry('pages', `${entryId}.en`);
+if (!entry) throw new Error(`Page not found: ${entryId}.en`);
 
+// Single discriminator — entry.data.page_layout — selects which layout
+// renders the page. Plain markdown pages omit the field and fall through
+// to PageLayout.
 const layout = entry.data.page_layout;
 const { Content } = await render(entry);
 ---

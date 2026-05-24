@@ -2,6 +2,7 @@
 title: "GDA Workshops"
 locale: en
 slug: "ateliers"
+category: narrative
 description: "Workshops on Geometric Data Analysis organised in France and abroad since 2006."
 ---
 

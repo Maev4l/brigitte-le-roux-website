@@ -18,7 +18,7 @@ const otherLocale = isFr ? 'en' : 'fr';
 // Suppress the link when no counterpart markdown exists (e.g. `bureau` is FR-only).
 // The glob is resolved at build time, so this has no runtime cost.
 const allPages = import.meta.glob('../../content/pages/**/*.md', { eager: true });
-const counterpartExists = `../../content/pages/${slug}/${otherLocale}.md` in allPages;
+const counterpartExists = `../../content/pages/${slug}.${otherLocale}.md` in allPages;
 
 let otherPath = null;
 if (counterpartExists) {

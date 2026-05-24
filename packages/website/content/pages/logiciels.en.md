@@ -2,6 +2,7 @@
 title: "Software & Data"
 locale: en
 slug: "logiciels"
+category: narrative
 description: "Datasets, R scripts, software and reference texts for Geometric Data Analysis."
 ---
 

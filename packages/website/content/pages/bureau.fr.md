@@ -2,6 +2,7 @@
 title: "Bureau"
 locale: fr
 slug: "bureau"
+category: narrative
 description: "Adresse et accès au bureau de Brigitte Le Roux, MAP5, 45 rue des Saints-Pères, Paris."
 ---
 

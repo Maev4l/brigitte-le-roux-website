@@ -2,6 +2,7 @@
 title: "Curriculum Vitae"
 locale: fr
 slug: "cv"
+category: narrative
 description: "Curriculum vitae de Brigitte Le Roux : formation, carrière universitaire, responsabilités scientifiques et distinctions."
 ---
 

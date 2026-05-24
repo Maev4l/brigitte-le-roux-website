@@ -2,6 +2,7 @@
 title: "Thesis & HDR"
 locale: en
 slug: "these"
+category: narrative
 description: "Doctoral thesis (1970) and habilitation (2000) by Brigitte Le Roux."
 ---
 

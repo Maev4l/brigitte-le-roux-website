@@ -2,6 +2,7 @@
 title: "Thèse & HDR"
 locale: fr
 slug: "these"
+category: narrative
 description: "Thèse de doctorat (1970) et habilitation à diriger des recherches (2000) de Brigitte Le Roux."
 ---
 

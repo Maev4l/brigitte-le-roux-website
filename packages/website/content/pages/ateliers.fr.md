@@ -2,6 +2,7 @@
 title: "Ateliers d'AGD"
 locale: fr
 slug: "ateliers"
+category: narrative
 description: "Ateliers d'analyse géométrique des données organisés en France et à l'étranger depuis 2006."
 ---
 

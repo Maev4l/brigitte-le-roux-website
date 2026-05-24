@@ -2,6 +2,7 @@
 title: "Logiciels & données"
 locale: fr
 slug: "logiciels"
+category: narrative
 description: "Jeux de données, scripts R, logiciels et textes de référence pour l'analyse géométrique des données."
 ---
 

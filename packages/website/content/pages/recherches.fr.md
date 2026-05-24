@@ -2,6 +2,7 @@
 title: "Activités de recherche"
 locale: fr
 slug: "recherches"
+category: narrative
 description: "Axes de recherche en Analyse Géométrique des Données : fondements, ACM, données structurées, inférence combinatoire et applications."
 ---
 
