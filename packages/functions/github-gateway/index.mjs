@@ -16,6 +16,11 @@ import {
 } from './lib/allowlist.mjs';
 import { injectCommitAuthor } from './lib/commit-author.mjs';
 import { getOctokit } from './lib/octokit.mjs';
+import {
+  buildSyntheticUser,
+  isCollaboratorCheckRequest,
+  isUserIdentityRequest,
+} from './lib/user-interceptor.mjs';
 
 const ALLOWED_REPO = process.env.ALLOWED_REPO; // e.g. "Maev4l/brigitte-le-roux-website"
 
@@ -25,7 +30,15 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
-const stripApiPrefix = (rawPath) => rawPath.replace(/^\/api\/git/, '');
+// Sveltia treats any non-api.github.com URL as GitHub Enterprise and
+// prepends `/api/v3` to REST calls (and `/api/graphql` to GraphQL ones).
+// Our api_root is `https://cms.brigitte-le-roux.com/api/git`, so a Sveltia
+// /user call lands here with rawPath `/api/git/api/v3/user`. Strip both
+// prefixes — first our public proxy path, then the Enterprise-style
+// version segment — to leave the canonical GitHub-API path the rest of
+// this handler reasons about.
+const stripApiPrefix = (rawPath) =>
+  rawPath.replace(/^\/api\/git/, '').replace(/^\/api\/v3/, '');
 
 // Allowed shape: /repos/<owner>/<repo>/...
 const isAllowedRepo = (githubPath) => {
@@ -43,6 +56,13 @@ const isContentMutatingRequest = (method, githubPath) => {
   return false;
 };
 
+// Sveltia's normalizeGraphQLBaseURL appends /api/graphql to the api_root
+// for Enterprise-style backends. After stripApiPrefix the path lands as
+// `/api/graphql`. Also accept the bare `/graphql` form for forward
+// compatibility.
+const isGraphQLRequest = (method, githubPath) =>
+  method === 'POST' && (githubPath === '/api/graphql' || githubPath === '/graphql');
+
 export const handler = async (event) => {
   try {
     const claims = event.requestContext?.authorizer?.jwt?.claims;
@@ -53,8 +73,72 @@ export const handler = async (event) => {
     const method = event.requestContext.http.method;
     const githubPath = stripApiPrefix(event.rawPath);
 
+    // Sveltia probes /user immediately after OAuth to identify the editor.
+    // The Bearer is a Cognito JWT (not a GitHub PAT), so api.github.com
+    // would 401. Return a synthetic user built from the JWT email claim.
+    if (isUserIdentityRequest(method, githubPath)) {
+      const syntheticUser = buildSyntheticUser(claims.email);
+      if (!syntheticUser) {
+        return json(401, { error: 'Cannot synthesize user — invalid email claim' });
+      }
+      return {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(syntheticUser),
+      };
+    }
+
+    // Sveltia issues GraphQL queries against /api/graphql. Forward them to
+    // GitHub's GraphQL endpoint via Octokit (authenticated with the
+    // installation token; the GitHub App's permissions limit blast radius
+    // because it can only see our single repo). Skip isAllowedRepo for
+    // this path — repo scoping is enforced at the App-installation layer.
+    if (isGraphQLRequest(method, githubPath)) {
+      let parsed;
+      try {
+        parsed = event.body ? JSON.parse(event.body) : null;
+      } catch {
+        return json(400, { error: 'Invalid JSON body for GraphQL request' });
+      }
+      if (!parsed || typeof parsed.query !== 'string') {
+        return json(400, { error: 'GraphQL request missing query' });
+      }
+      const octokit = await getOctokit();
+      try {
+        const data = await octokit.graphql(parsed.query, parsed.variables || {});
+        return {
+          statusCode: 200,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ data }),
+        };
+      } catch (err) {
+        // GraphqlResponseError exposes `.errors` and `.data` (partial result).
+        if (err.errors) {
+          return {
+            statusCode: 200,
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ data: err.data ?? null, errors: err.errors }),
+          };
+        }
+        throw err;
+      }
+    }
+
     if (!isAllowedRepo(githubPath)) {
       return json(403, { error: 'Repo not in allowlist', path: githubPath });
+    }
+
+    // Sveltia verifies repo write access via GET /repos/{o}/{r}/collaborators/{login}
+    // where {login} is the synthetic user.login (the JWT email) — not a real
+    // GitHub username. GitHub would 404. Return 204 (the "yes, is a
+    // collaborator" status) because the JWT authorizer upstream is our
+    // authorization layer; reaching this point already means authorized.
+    if (isCollaboratorCheckRequest(method, githubPath)) {
+      return {
+        statusCode: 204,
+        headers: { 'content-type': 'application/json' },
+        body: '',
+      };
     }
 
     const requestBody = event.body ? JSON.parse(event.body) : null;
