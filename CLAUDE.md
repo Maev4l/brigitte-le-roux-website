@@ -23,25 +23,49 @@ markdown file. No separate `packages/website/content/books/`, `packages/website/
 `packages/website/content/data/*.json` indirection. Adding or editing an entry means editing
 exactly one file in each locale.
 
-- **Pages** — `packages/website/content/pages/<slug>/{fr,en}.md`. Frontmatter fields,
-  validated by Zod schema in `packages/website/src/content/config.mjs`:
-  - Common: `title`, `locale`, `slug`, optional `description`, optional
-    `keywords`.
-  - Page-layout discriminator (optional): `page_layout: home | books | publications`.
-    When set, the catch-all route routes the entry to the matching dedicated layout
-    (`HomeLayout`, `BooksLayout`, `PublicationsLayout`). When omitted, the page
-    renders via the default `PageLayout`. Listing pages also carry their inline
-    `books:` or `publications:` array as before.
-  - Home-only structured fields (when `page_layout: home`): `kicker`, `deck_html`,
-    `portrait`, `tiles`.
-- **i18n** — `packages/website/content/i18n/{fr,en}.json` for nav labels, footer text and
-  common UI strings (key/value translation data — not editorial content,
-  hence JSON is appropriate here).
+### Flat file layout
 
-Catch-all routes (`packages/website/src/pages/[...slug].astro` and `packages/website/src/pages/en/[...slug].astro`)
-read `entry.data.books` / `entry.data.publications` from the page entry,
-sort by `year` descending, and render the listing — so the most recent
-items always appear first regardless of YAML order.
+Per-locale filenames are flat — `<slug>.<locale>.md` rather than
+`<slug>/<locale>.md`. This restores direct URL ↔ file-path symmetry:
+
+- Top-level pages: `packages/website/content/pages/<slug>.<locale>.md`
+  - `pages/cv.fr.md` ↔ `/cv/` (and `pages/cv.en.md` ↔ `/en/cv/`)
+  - `pages/home.{fr,en}.md` ↔ `/` and `/en/`
+  - `pages/livres.{fr,en}.md` ↔ `/livres/` (and EN equivalent)
+- Detail pages (one extra path segment):
+  `packages/website/content/pages/<parent>/<slug>.<locale>.md`
+  - `pages/livres/cigda.fr.md` ↔ `/livres/cigda/`
+
+### Frontmatter fields
+
+Validated by the Zod schema in `packages/website/src/content/config.mjs`:
+
+- Common: `title`, `locale`, `slug`, optional `description`, optional
+  `keywords`.
+- **`category: narrative`** (optional) — marker on narrative pages
+  (`cv`, `recherches`, `ateliers`, `these`, `logiciels`, `bureau`).
+  Used by Sveltia's Folder collection `filter` to surface just these
+  pages in the CMS "Pages" collection. The home/livres/publications
+  listing pages deliberately OMIT this field — they live in their own
+  dedicated Sveltia File collections.
+- **`page_layout: home | books | publications`** (optional) —
+  catch-all route discriminator. When set, the entry renders via the
+  matching dedicated layout (`HomeLayout`, `BooksLayout`,
+  `PublicationsLayout`); when omitted, the default `PageLayout`. The
+  listing pages carry their inline `books:` or `publications:` array.
+- Home-only structured fields (when `page_layout: home`): `kicker`,
+  `deck_html`, `portrait`, `tiles`.
+
+**i18n strings** — `packages/website/content/i18n/{fr,en}.json` for nav
+labels, footer text and common UI strings (key/value translation data —
+not editorial content, hence JSON is appropriate here).
+
+Catch-all routes (`packages/website/src/pages/[...slug].astro` and
+`packages/website/src/pages/en/[...slug].astro`) derive the URL slug
+directly from the entry's path, read `entry.data.books` /
+`entry.data.publications` from the page entry, sort by `year`
+descending, and render the listing — so the most recent items always
+appear first regardless of YAML order.
 
 ### Inline listing entries
 
@@ -49,7 +73,7 @@ Each entry is a YAML mapping inside the page's `books:` or `publications:`
 array. Schemas in `packages/website/src/content/config.mjs`. Shapes:
 
 ```yaml
-# In packages/website/content/pages/livres/{fr,en}.md — same data in both files since
+# In packages/website/content/pages/livres.{fr,en}.md — same data in both files since
 # book titles are language-identical on this site.
 books:
   - slug: cigda
@@ -75,8 +99,8 @@ books:
 ```
 
 ```yaml
-# In packages/website/content/pages/publications/{fr,en}.md — each locale's page carries its
-# own `title` for each entry (titles often genuinely differ FR/EN).
+# In packages/website/content/pages/publications.{fr,en}.md — each locale's page carries
+# its own `title` for each entry (titles often genuinely differ FR/EN).
 publications:
   - slug: lebaron-le-roux-2013-geometrie-champ
     year: 2013
@@ -88,7 +112,7 @@ publications:
     external: "https://..."               # optional
 ```
 
-The books listing page (`packages/website/content/pages/livres/{fr,en}.md`) also accepts three
+The books listing page (`packages/website/content/pages/livres.{fr,en}.md`) also accepts three
 optional sub-blocks rendered below the main `books:` list, mirroring the
 legacy site's "Livres traduits" / "Translated books", "Chapitres dans des
 ouvrages collectifs" / "Book chapters" sections, and the bottom-of-page
@@ -98,7 +122,7 @@ split cleanly into author/title/venue fields). The route sorts entries by
 `year` descending before rendering.
 
 ```yaml
-# In packages/website/content/pages/livres/{fr,en}.md, after the books: array.
+# In packages/website/content/pages/livres.{fr,en}.md, after the books: array.
 translated_books_title: "Livres traduits"          # locale-specific section header
 translated_books:
   - year: 1996
@@ -113,15 +137,22 @@ book_chapters:
 data_sets_link_html: "Fichiers de données : <a href=\"/logiciels/\">cliquer ici</a>"
 ```
 
-Adding a new route:
+Adding a new narrative page:
 
-1. Create the markdown pair in `packages/website/content/pages/<new-slug>/`.
+1. Create the markdown pair `packages/website/content/pages/<new-slug>.fr.md`
+   and `<new-slug>.en.md`. Set `category: narrative` in the frontmatter
+   of each.
 2. Add the slug + label to `packages/website/content/i18n/{fr,en}.json`.
 3. Add the route to the `items` array in `packages/website/src/components/Header.astro`.
 
+Sveltia's Folder collection auto-discovers the new files via its
+`filter: { field: category, value: narrative }` rule — no Sveltia
+config change required.
+
 Adding a new book / publication:
 
-1. Open `packages/website/content/pages/livres/{fr,en}.md` (or `publications/{fr,en}.md`).
+1. Open `packages/website/content/pages/livres.{fr,en}.md` (or
+   `publications.{fr,en}.md`).
 2. Append a new entry to the `books:` (or `publications:`) array per the
    schema above. Both locale files need the entry — for books the YAML is
    identical in both; for publications the `title` field carries the
@@ -142,6 +173,14 @@ in `packages/website/public/data/` exceeds GitHub's 100 MB per-file cap, so trac
 viable; rather than splitting strategy with Git LFS, the project treats S3 as the
 source of truth — which is consistent with how `yarn frontend:deploy` already works (build →
 sync `dist/` to S3).
+
+**Carve-out: `packages/website/public/cms/**` IS git-tracked.** The
+Sveltia loader, editorial config (`config.yml`), and OAuth shim that
+live there are CODE — they integrate with the github-gateway Lambda and
+CloudFront functions and belong in version control next to those, not
+in S3-as-canonical. A negation rule in `.gitignore` (`!public/cms/`,
+`!public/cms/**`) keeps the carve-out scoped while leaving `public/pdfs/`,
+`public/data/`, `public/img/` ignored as before.
 
 Reference these assets from markdown/JSON as plain absolute paths (e.g.
 `[PDF](/pdfs/foo.pdf)`).

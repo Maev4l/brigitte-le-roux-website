@@ -67,6 +67,71 @@ Edited content live at https://brigitte-le-roux.com/<page>/
 
 ---
 
+## Execution deviations (rolled in 2026-05-24)
+
+The plan executed end-to-end and the editor smoke test passed, but
+several deviations were required during smoke iteration. Each is
+captured here with the commit that introduced it; the reference spec
+has been updated to reflect the realized design.
+
+- **(a) github-gateway interceptors expanded.** The plan only
+  anticipated `GET /user` (Task 2). Sveltia's real call pattern
+  required four interceptors PLUS a query-string-preservation fix:
+  - `GET /user` → synthetic user from JWT claim *(in plan — Task 2)*
+  - `stripApiPrefix` extended to strip `/api/v3` (Sveltia auto-prepends
+    the Enterprise prefix when `api_root` is non-github.com)
+  - `GET /repos/{o}/{r}/collaborators/{login}` → 204 (Sveltia's
+    repo-access probe; the synthetic user can't be verified upstream)
+  - `POST /api/graphql` → forward via Octokit's `graphql()` method
+  - **Critical fix:** preserve `event.rawQueryString` when forwarding
+    to Octokit. Without it, `?recursive=1` was dropped on the Trees
+    API call and Sveltia silently received the root-level tree only
+    (zero entries displayed in the UI — a quiet failure mode).
+
+  Initial set: commit `bde02bd`. Query-string fix: commit `28332f6`.
+
+- **(b) CloudFront `Authorization` header rewrite (new function).**
+  Sveltia's GitHub backend sends `Authorization: token <jwt>` (legacy
+  PAT scheme), but APIGW's Cognito JWT authorizer only accepts
+  `Bearer`. A new CloudFront viewer-request function
+  (`packages/infrastructure/cloudfront-api-auth-function.js`) attached
+  to the `/api/*` cache behavior rewrites `token` → `Bearer` at the
+  edge. Not in the original plan; required for any save to succeed.
+  Commit `d2de081`.
+
+- **(c) IndexedDB cache short-circuit gotcha.** Sveltia caches its
+  GitHub file-list in IndexedDB keyed on the current commit hash. A
+  bad cache entry from an earlier broken session silently blocks the
+  tree-fetch on subsequent loads at the same commit (the UI just
+  shows no entries with no console error). Recovery during smoke:
+  `indexedDB.deleteDatabase('github:Maev4l/brigitte-le-roux-website')`
+  in DevTools, then hard-reload. Documented here so future runbooks
+  for "CMS shows no files" know to check the cache before anything
+  else.
+
+- **(d) Mid-flight content layout refactor.** Plan 8 assumed the
+  legacy `pages/<slug>/<locale>.md` layout. During smoke we flipped
+  to a flat per-locale filename pattern (`pages/<slug>.<locale>.md`
+  + `pages/<parent>/<slug>.<locale>.md` for detail pages) and
+  introduced an optional `category: narrative` frontmatter marker on
+  narrative pages so Sveltia's Folder collection can filter to just
+  those. Restores URL ↔ file-path symmetry, simplifies the Astro
+  catch-all routes, and lets the editor add/remove narrative pages
+  without touching nav code. 23 markdown files renamed via `git mv`;
+  Zod schema in `src/content/config.mjs` gained
+  `category: z.enum(['narrative']).optional()`. Commit `3f2c18c`.
+
+- **(e) `public/cms/**` carved out of `.gitignore`.** Plan 8 wrote
+  three files under `packages/website/public/cms/` (loader, config,
+  OAuth shim), but `public/` is otherwise gitignored (S3 is canonical
+  for media). These three files are CODE, not media — they belong in
+  version control alongside the Lambda + Terraform they integrate
+  with. A negation rule in `.gitignore` tracks `public/cms/**` while
+  leaving `public/pdfs/`, `public/data/`, `public/img/` ignored.
+  Commit `a986b82`.
+
+---
+
 ## Preconditions
 
 - On `main`, working tree clean (HEAD includes commit `6b28156` — Plan 7's media-manager refactor).

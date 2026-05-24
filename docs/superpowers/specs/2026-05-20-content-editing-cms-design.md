@@ -171,25 +171,35 @@ begin.
 Sveltia is a static SPA. It is served from the website's own S3 bucket at
 the path prefix `/cms/`. No separate hosting.
 
-Files in the website package:
+Files in the website package (all under `packages/website/public/cms/`):
 
-- `packages/website/public/cms/index.html` — pulls Sveltia from a pinned
-  CDN URL (or a self-hosted copy in `public/cms/vendor/sveltia/`). Initial
-  decision: CDN pin to a specific Sveltia version tag.
-- `packages/website/public/cms/config.yml` — Sveltia collection
-  configuration (§2).
-- `packages/website/public/cms/sveltia-cognito-backend.js` — custom
-  backend plugin (~80 lines) that wires Sveltia to Cognito + our github-gateway.
-- `packages/website/public/cms/sveltia-s3-media.js` — custom media library
-  plugin (~150 lines) that wires "Upload file" to our media-manager.
+- `index.html` — Sveltia loader (`CMS_MANUAL_INIT = true`, pulls
+  `@sveltia/cms@0.163.0` from unpkg, then `CMS.init()`).
+- `config.yml` — Sveltia collection configuration (§2).
+- `auth/index.html` — OAuth shim (Cognito SRP login form +
+  `sveltia-cms-auth` postMessage handshake). Sveltia opens this in a
+  popup at `<base_url>/auth?provider=github&site_id=…`.
 
-Both JS files are committed into the website repo (they are part of the
-deployable artefact, not gitignored).
+> **Git-tracked carve-out.** `packages/website/public/` is otherwise
+> gitignored (S3 is canonical for media), but `public/cms/**` is
+> explicitly tracked. Rationale: these files are CODE (loader, editorial
+> config, OAuth shim) — they belong in version control alongside the
+> Lambda + Terraform that they integrate with, not in S3-as-canonical.
+> Implemented via a negation rule in `.gitignore`.
+
+The legacy approach of a custom `sveltia-cognito-backend.js` plugin was
+abandoned during Plan 8: Sveltia has no plugin API for replacing its
+OAuth flow. Instead, Sveltia's stock `backend: github` is used as-is and
+the auth UX is captured by the OAuth shim at `/cms/auth/` + a CloudFront
+function that rewrites the editor's `Authorization: token <jwt>` header
+to `Bearer <jwt>` so APIGW's JWT authorizer accepts it (see §3).
 
 CloudFront serves `/cms/` from S3 same as the rest of the site. Routing
-constraint: SPA-style refresh on `/cms/foo` should serve `/cms/index.html`.
-The existing CloudFront function (`packages/infrastructure/cloudfront-site-function.js`
-after §0) will be extended to handle this if it doesn't already.
+constraint: SPA-style refresh on `/cms/foo` should serve `/cms/index.html`,
+BUT `/cms/auth` and `/cms/auth/` must serve `/cms/auth/index.html`
+directly (the OAuth shim is a real static page, not an SPA route). The
+`cms_router` CloudFront function (`packages/infrastructure/cloudfront-cms-function.js`)
+implements both rules.
 
 ## §2 — Content schemas mapped to Sveltia forms
 
@@ -198,16 +208,57 @@ schema in `packages/website/src/content/config.mjs`. Sveltia validates on
 save; if she somehow bypasses, the Zod build-time check fails and the
 deploy doesn't ship — the site never breaks.
 
-Five collections, all in French in the UI:
+### Content layout (flat)
+
+All page entries use a flat per-locale filename pattern:
+
+- Top-level pages: `packages/website/content/pages/<slug>.<locale>.md`
+  — e.g. `pages/cv.fr.md`, `pages/cv.en.md`, `pages/home.fr.md`,
+  `pages/livres.fr.md`.
+- Detail pages: `packages/website/content/pages/<parent>/<slug>.<locale>.md`
+  — e.g. `pages/livres/cigda.fr.md`, `pages/livres/cigda.en.md`.
+
+URL ↔ file mapping is direct: `/cv/` ↔ `pages/cv.fr.md`,
+`/livres/cigda/` ↔ `pages/livres/cigda.fr.md`. Astro's catch-all routes
+(`[...slug].astro`, `en/[...slug].astro`) derive the URL slug from the
+entry path with no separate folder-hop.
+
+### Narrative-page marker
+
+Narrative pages (cv, recherches, ateliers, these, logiciels, bureau)
+carry an optional frontmatter field:
+
+```yaml
+category: narrative
+```
+
+The home, livres, and publications listing pages deliberately OMIT this
+field — they are managed via their dedicated File collections below, not
+the Folder collection. The Zod schema in `packages/website/src/content/config.mjs`
+adds `category: z.enum(['narrative']).optional()` so the build still
+accepts both shapes.
+
+### Four collections (UI in French)
+
+Adding/removing a narrative page is a Sveltia self-service operation: the
+Folder collection auto-discovers any markdown file in `pages/` that has
+`category: narrative`. Listing pages (home, livres, publications) stay
+addressable by their fixed file paths under their dedicated File
+collections.
 
 ### 1. Narrative pages (Folder collection)
 
-- Targets `packages/website/content/pages/<slug>/` for slugs:
-  `cv`, `recherches`, `ateliers`, `these`, `logiciels`, `bureau`.
-- `i18n: multiple_files`, locales `[fr, en]`, default `fr`. Sveltia treats
-  `fr.md` + `en.md` as two locales of the same entry, with a tab switcher.
+- Targets `packages/website/content/pages/` (flat).
+- `filter: { field: category, value: narrative }` — only entries with
+  `category: narrative` appear here, which keeps the listing-page entries
+  (home, livres, publications, and any sub-folder detail pages) out of
+  this collection.
+- `i18n: multiple_files`, locales `[fr, en]`, default `fr`. Sveltia
+  treats `<slug>.fr.md` + `<slug>.en.md` as two locales of the same
+  entry, with a tab switcher.
 - Form fields:
   - `title` (string, required)
+  - `category` (hidden, default `narrative`)
   - `description` (string, optional — narrower-than-default SEO snippet)
   - `keywords` (string, optional)
   - body (markdown widget with rich-text toolbar: bold, italic, headings,
@@ -215,7 +266,7 @@ Five collections, all in French in the UI:
 
 ### 2. Home page (File collection, single entry)
 
-Targets `packages/website/content/pages/home/{fr,en}.md`.
+Targets `packages/website/content/pages/home.{fr,en}.md`.
 
 - `kicker` (string)
 - `deck_html` (string, monospace, label: "Sous-titre (HTML)"; help text
@@ -228,7 +279,7 @@ Targets `packages/website/content/pages/home/{fr,en}.md`.
 
 ### 3. Books page (File collection)
 
-Targets `packages/website/content/pages/livres/{fr,en}.md`.
+Targets `packages/website/content/pages/livres.{fr,en}.md`.
 
 - Top-level: `title`, `description`, `keywords`.
 - `books`: repeatable list of book entries (slug, title, authors (string
@@ -244,7 +295,7 @@ Targets `packages/website/content/pages/livres/{fr,en}.md`.
 
 ### 4. Publications page (File collection)
 
-Targets `packages/website/content/pages/publications/{fr,en}.md`.
+Targets `packages/website/content/pages/publications.{fr,en}.md`.
 
 - Top-level: `title`, `description`, `keywords`.
 - `publications`: repeatable list (slug, year, title, authors, venue,
@@ -278,10 +329,13 @@ order her entries.
 
 ### Adding a new top-level route
 
-Out of scope for the user. Adding a new section requires updating the
-header nav in `packages/website/src/components/Header.astro`, which is
-path-protected by CODEOWNERS + the Lambda allowlist. The administrator
-does this once when needed.
+Adding a *narrative* page is self-service through Sveltia (the Folder
+collection's `filter` picks it up automatically once the new file's
+frontmatter carries `category: narrative`). Adding a brand-new
+top-level *route* (e.g. a new listing layout) still requires updating
+the header nav in `packages/website/src/components/Header.astro`, which
+is path-protected by CODEOWNERS + the Lambda allowlist — administrator
+only.
 
 ## §3 — Editor auth + github-gateway Lambda
 
@@ -423,6 +477,45 @@ review anyway).
 6. Forward the request to `api.github.com` via Octokit. Stream the
    response back to the client.
 
+#### Sveltia compatibility interceptors
+
+Sveltia's stock GitHub backend assumes it's talking to a real
+api.github.com (or an Enterprise mirror). Several request shapes don't
+survive a naive proxy, so the Lambda short-circuits or normalizes them
+before the Octokit forward path:
+
+- **`GET /user`** — Sveltia probes this immediately after OAuth to
+  identify the editor. The Bearer is a Cognito id_token (not a GitHub
+  PAT), so forwarding 401s. Lambda returns a synthetic user object
+  built from the JWT email claim
+  (`{ login, name, email, avatar_url: null, id: 1, type: 'User' }`).
+  Implemented in `lib/user-interceptor.mjs`.
+- **`/api/v3` prefix strip** — Sveltia auto-prepends the GitHub
+  Enterprise prefix to every request when `api_root` doesn't match
+  api.github.com. `stripApiPrefix` strips both `/api/git` AND `/api/v3`
+  before path matching.
+- **`GET /repos/{owner}/{repo}/collaborators/{login}`** — Sveltia's
+  repo-access probe. The synthetic user has no real GitHub identity, so
+  we can't answer truthfully. Returns 204 No Content (Sveltia treats
+  that as "yes, the user is a collaborator").
+- **`POST /api/graphql`** — Sveltia uses GitHub's GraphQL endpoint for
+  some read paths. Lambda forwards via Octokit's `graphql()` method
+  (with the same installation token used for REST).
+- **Query-string preservation** — `event.rawQueryString` is forwarded
+  through to Octokit. Without this, `?recursive=1` was dropped on the
+  Trees API call and Sveltia silently got the root-level tree only
+  (zero entries displayed in the UI).
+
+#### CloudFront-edge `Authorization` rewrite
+
+Sveltia's GitHub backend sends `Authorization: token <jwt>` (the legacy
+GitHub PAT scheme), but API Gateway's Cognito JWT authorizer only
+accepts `Authorization: Bearer <jwt>`. A small CloudFront viewer-request
+function (`packages/infrastructure/cloudfront-api-auth-function.js`,
+attached to the `/api/*` cache behavior on the CMS distribution)
+rewrites `token` → `Bearer` at the edge. This keeps the github-gateway
+Lambda agnostic to the header scheme and avoids forking Sveltia.
+
 #### GitHub App
 
 - Owned by the administrator's personal GitHub account. Free.
@@ -433,7 +526,21 @@ review anyway).
   Original PEM file is destroyed locally afterwards.
 - Key rotation runbook documented (§6). Quarterly cadence.
 
-### Custom Sveltia backend plugin
+### Custom Sveltia backend plugin (superseded)
+
+> **Design pivot (2026-05-24).** This subsection described a custom
+> `sveltia-cognito-backend.js` plugin that would replace Sveltia's
+> OAuth-redirect flow in-page. Sveltia has no plugin API for that —
+> the realized design (Plan 8) uses Sveltia's stock `backend: github`
+> with two integration points: (a) the OAuth shim at `/cms/auth/`
+> performs the SRP login in a popup and `postMessage`s the id_token
+> back to Sveltia per the `sveltia-cms-auth` protocol; (b) the
+> CloudFront `cms_api_auth_rewriter` function rewrites
+> `Authorization: token <jwt>` → `Authorization: Bearer <jwt>` so
+> APIGW's JWT authorizer accepts it. End result is unchanged from the
+> editor's perspective (entire auth UX stays on `cms.brigitte-le-roux.com`,
+> in-popup SRP, no AWS-domain redirect bounce). The original plugin
+> description follows for historical context.
 
 `packages/website/public/cms/sveltia-cognito-backend.js`. ~250 lines of JS.
 
