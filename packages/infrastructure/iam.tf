@@ -104,23 +104,28 @@ resource "aws_iam_user" "sveltia_media_manager" {
 }
 
 data "aws_iam_policy_document" "sveltia_media_manager" {
-  # Sveltia's S3 library calls ListObjectsV2 to enumerate the prefix
-  # when the editor opens the media browser. Scoped to the single
-  # `data/` prefix — the site uses a flat /data/<basename> URL space
-  # for every binary, so there's no need to authorise other prefixes.
+  # Sveltia's media picker enumerates the bucket without a prefix (or
+  # with one that doesn't match an `s3:prefix StringLike data/*`
+  # condition), so we allow ListBucket bucket-wide. The bucket is
+  # already publicly readable via CloudFront — listing object names
+  # exposes nothing new. The write permission below stays tightly
+  # scoped to `data/*`, which is the actual security boundary.
   statement {
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
     resources = [aws_s3_bucket.site.arn]
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = ["data/*"]
-    }
   }
+  # PutObjectAcl is needed alongside PutObject because Sveltia's S3
+  # uploader hardcodes `x-amz-acl: public-read` on every PUT — S3
+  # evaluates that as TWO actions. ignore_public_acls on the bucket
+  # makes the ACL functionally inert (see s3.tf), but the API still
+  # checks the IAM caller has permission to *set* it.
   statement {
-    effect  = "Allow"
-    actions = ["s3:PutObject"]
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+    ]
     resources = [
       "${aws_s3_bucket.site.arn}/data/*",
     ]
