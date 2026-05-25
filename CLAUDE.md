@@ -341,12 +341,6 @@ pre-existing and looked up via data sources — Terraform does not manage them.
 - Real publications search / filter (current listing is static).
 - Light/dark theme toggle, PWA, analytics, forms.
 
-## Open follow-ups
-
-- `bureau` page is FR-only on the legacy source; currently omitted from EN nav.
-- Publications schema may evolve once the listing UX is finalized.
-- Translated FR/EN slug pairs to be verified against the legacy site nav.
-
 ## Reference
 
 - Design spec: `docs/superpowers/specs/2026-05-16-brigitte-leroux-website-design.md`.
