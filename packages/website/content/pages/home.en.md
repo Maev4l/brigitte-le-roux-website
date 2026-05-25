@@ -7,7 +7,7 @@ description: Homepage of Brigitte Le Roux, researcher specialising in Geometric 
 kicker: Geometric Data Analysis · Research
 deck_html: Mathematician. Geometric Data Analysis — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>and CEVIPOF&nbsp;/&nbsp;CNRS.
 portrait:
-  src: /data/photo-jrsue.jpeg
+  src: https://brigitte-le-roux.com/data/photo-jrsue.jpeg
   alt: Brigitte Le Roux
 tiles:
   affiliations:

@@ -8,7 +8,7 @@ keywords: ''
 kicker: Analyse géométrique des données · Recherche
 deck_html: Chercheuse en mathématiques. Analyse géométrique des données — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>et CEVIPOF&nbsp;/&nbsp;CNRS.
 portrait:
-  src: /data/photo-jrsue.jpeg
+  src: https://brigitte-le-roux.com/data/photo-jrsue.jpeg
   alt: Brigitte Le Roux
 tiles:
   affiliations:
