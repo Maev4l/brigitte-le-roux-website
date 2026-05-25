@@ -224,12 +224,21 @@ Three Sveltia quirks shaped the AWS-side config:
   `ignore_public_acls = true` lets the ACL through the API but
   neutralises its meaning. CloudFront OAC + the bucket policy remain
   the actual read gate.
-- Sveltia commits binary uploads to git via the github-gateway proxy
-  in addition to the S3 PUT. `.gitignore` doesn't block this (it's a
-  GitHub Contents API call, not local `git add`). Harmless because
-  the GHA deploy `--exclude`s `data/*` from the S3 sync (S3 is
-  canonical for binaries), but the sneak-into-git artefact is worth
-  flagging — a periodic `git rm` sweep cleans them up.
+- Sveltia commits binary uploads to git alongside the markdown edit,
+  using a GitHub GraphQL `createCommitOnBranch` mutation routed via
+  the github-gateway proxy. The github-gateway's path allowlist
+  (`lib/allowlist.mjs`) covers GraphQL mutations as well as the REST
+  Contents/Trees endpoints, so only `packages/website/content/*` and
+  `packages/website/public/data/*` paths can be committed — anything
+  else (e.g. `packages/functions/`, `.github/`) returns 403 from the
+  gateway before reaching GitHub. The `data/` allowance is what lets
+  Sveltia's binary-bundling-into-commits succeed. `.gitignore` does
+  NOT participate in this check — it's enforced only by local
+  `git add`, not by the GitHub Contents/GraphQL APIs. Net: media
+  binaries do accumulate in git; the GHA deploy `--exclude`s `data/*`
+  from the S3 sync (S3 is canonical for binaries) so they sit
+  harmlessly. A periodic `git rm packages/website/public/data/*`
+  sweep cleans them up.
 - Sveltia's S3 prefix is global (one prefix per media library). The
   flat `/data/*` URL space means every CMS upload lands in one bucket
   of media. Per-field routing isn't supported by Sveltia.

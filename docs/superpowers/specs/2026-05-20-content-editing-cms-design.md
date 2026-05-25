@@ -786,16 +786,23 @@ case-by-case is a follow-up.
 #### Sveltia commits binaries to git, not just S3
 
 When Sveltia saves an entry that references a newly-uploaded image,
-the github-gateway proxy commits BOTH the markdown change AND the
-binary file into the repo. The `.gitignore` rule that hides
-`packages/website/public/data/*` from local commits is enforced by
-the local `git` client — github-gateway uses the GitHub Contents API
-and bypasses it. Net: binaries can sneak into the tree via the CMS
-even though they're declaratively ignored. This is harmless (S3 is
-canonical and the public-site deploy's `yarn frontend:deploy` doesn't
-re-sync `data/*` from git — the GHA workflow explicitly `--exclude`s
-the prefix). If snuck-in binaries accumulate noticeably, a periodic
-sweep can `git rm` them.
+it sends a GraphQL `createCommitOnBranch` mutation through the
+github-gateway proxy that commits BOTH the markdown change AND the
+binary file into the repo (the binary's bytes ride along base64-encoded
+in `fileChanges.additions[].contents`). The github-gateway's path
+allowlist (`lib/allowlist.mjs:extractPathsFromGraphqlBody`) inspects
+these mutations and rejects any path outside the two permitted
+prefixes (`packages/website/content/`, `packages/website/public/data/`)
+with HTTP 403 — defense in depth against a compromised editor session
+committing to `packages/functions/`, `.github/`, etc.
+
+The `public/data/` allowance is what lets Sveltia's binary-bundling
+succeed. `.gitignore` does NOT participate in this check (it's enforced
+only by local `git add`, not by the GitHub Contents/GraphQL APIs). The
+binary in git is redundant with the S3 PUT; the GHA deploy `--exclude`s
+`data/*` from its S3 sync (S3 is canonical for binaries) so the git
+copy never propagates back to S3. Accumulated artefacts are cleaned up
+with a periodic `git rm packages/website/public/data/*` sweep.
 
 #### Out of scope for v1
 

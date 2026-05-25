@@ -653,12 +653,29 @@ so the next reader doesn't re-discover them.
    was already in place. Other media-reference fields (publication
    `pdf`, book review URLs, etc.) remain `widget: string` for v1.
 
-6. **Sveltia commits binary uploads to git** via the github-gateway
-   proxy, alongside the S3 PUT. Local `.gitignore` doesn't block this
-   (the commit goes through the GitHub Contents API). Harmless
-   because the GHA deploy `--exclude`s `data/*` from the sync (S3 is
-   canonical), but artefacts can accumulate in git. A periodic
-   `git rm packages/website/public/data/*` sweep cleans them up.
+6. **Sveltia commits binary uploads to git** alongside the S3 PUT,
+   via a GraphQL `createCommitOnBranch` mutation that bundles the
+   markdown delta and the binary file (base64) into one atomic
+   commit. This surfaced a real defense-in-depth gap: the
+   github-gateway's path allowlist was REST-only (Contents API +
+   Trees API), so the GraphQL mutation walked past it. Closed in a
+   follow-up commit: `lib/allowlist.mjs` now has
+   `extractPathsFromGraphqlBody` and the gateway's GraphQL branch
+   runs `findForbiddenPath` before forwarding. `public/data/` joins
+   `content/` in `ALLOWED_PATH_PREFIXES` so Sveltia's legitimate
+   uploads still succeed. Anything else — `packages/functions/`,
+   `.github/workflows/`, etc. — now returns 403 from the gateway.
+   Synthetically verified during the fix:
+   - `additions[].path: "packages/functions/malicious.mjs"` → 403
+     `{"error":"Path not in allowlist", ...}`
+   - `additions[].path: "packages/website/content/pages/test.md"` →
+     gateway accepts; GitHub rejects later on the synthetic invalid
+     `expectedHeadOid`. (Proves allowlist isn't the blocker.)
+
+   Binaries still accumulate in git despite the allowlist (the
+   `data/` prefix is permitted), but the GHA deploy `--exclude`s
+   `data/*` from S3 sync so the git copies don't propagate. Periodic
+   `git rm packages/website/public/data/*` sweep cleans them.
 
 7. **Sveltia secret in localStorage** is keyed on `sveltia-cms.prefs`
    (object) → `apiKeys.aws_s3` (string). Confirmed correct path via
