@@ -715,32 +715,94 @@ Bucket stays private. CloudFront-fronted reads from the public site
 are unaffected — the bucket policy from Plan 6 already allows both
 CloudFront distributions.
 
-### Sveltia's built-in S3 media library
+### Sveltia's built-in S3 media library (realized in Plan 9)
 
 Sveltia ships with native S3 support via its `media_libraries.aws_s3`
 config block; no custom JS plugin is needed (and not actually possible —
-see the design pivot note above). The CMS frontend configures Sveltia
-with the bucket name, region, prefix; the credentials are populated at
-runtime by a small bootstrap script that:
+see the design pivot note above). Credentials are populated at runtime
+by the OAuth shim itself (`packages/website/public/cms/auth/index.html`)
+— NOT a separate bootstrap script. Immediately after Cognito SRP
+returns the id_token and before the shim posts `authorization:github:success`
+to the opener, a `fetchAndStashS3Credentials(idToken)` helper:
 
-1. Reads the Cognito id_token from localStorage (set by the OAuth shim
-   on login).
-2. Calls `GET /api/media/s3-credentials` with `Authorization: Bearer <id_token>`.
-3. Writes the `access_key_id` + `secret_access_key` into Sveltia's
-   localStorage key for S3 credentials (Sveltia's documented mechanism
-   for receiving user-entered credentials).
-4. Then loads Sveltia via `CMS.init()`.
+1. Calls `GET /api/media/s3-credentials` with `Authorization: Bearer <id_token>`.
+2. Writes `secret_access_key` into `localStorage['sveltia-cms.prefs'].apiKeys.aws_s3`
+   (Sveltia reads it from there on first upload). The `access_key_id`
+   half lives statically in `public/cms/config.yml` — public-ish but
+   useless without the secret.
+3. Failure is non-fatal — auth still succeeds; Sveltia surfaces the
+   missing-secret error on the first upload attempt.
 
-On logout the bootstrap clears the localStorage key. Bootstrap details
-live in Plan 8 (Sveltia frontend).
+#### Sveltia upload behaviour and AWS-side accommodations
 
-Out of scope for v1:
+Sveltia's S3 uploader hardcodes `x-amz-acl: public-read` on every PUT
+with no configuration knob to suppress it. Three side-effects bled
+into the AWS layer; all three are intentional accommodations rather
+than design choices we'd otherwise have made:
 
-- **Browsing/picking existing media.** Sveltia's UI does have a media
-  library browser, but it requires `s3:ListObjectsV2` which our IAM
-  user has only at the bucket level (not per-prefix). If the
-  browser-list flow misbehaves, scope tighter or disable it via
-  Sveltia config.
+- **Bucket Object Ownership: `BucketOwnerPreferred`** (not the
+  AWS-modern `BucketOwnerEnforced` default). Enforced mode rejects
+  *any* ACL header with `AccessControlListNotSupported`. Preferred mode
+  accepts ACLs but bucket-owner still owns every object.
+- **Public Access Block: `block_public_acls = false`** (kept the other
+  three settings — `ignore_public_acls`, `block_public_policy`,
+  `restrict_public_buckets` — at `true`). `block_public_acls=true`
+  would reject any PUT carrying `x-amz-acl: public-read`;
+  `ignore_public_acls=true` neutralises the ACL's *meaning* after the
+  fact. Net: Sveltia's ACL is set on the object but functionally
+  inert. CloudFront OAC + the bucket policy remain the sole read
+  gatekeeper.
+- **IAM grants `s3:PutObjectAcl` alongside `s3:PutObject`.** A PUT
+  with an ACL header is evaluated as two API actions; without
+  `PutObjectAcl` the request is rejected even though the resulting
+  ACL is inert. Both actions are scoped to the same `data/*` prefix.
+
+#### Single flat `data/` prefix (post-2026-05-24 migration)
+
+Sveltia's `media_libraries.aws_s3.prefix` is global — one prefix per
+S3 media library, applied to every CMS upload. The site uses a single
+flat `/data/<basename>` URL space (PDFs, photos, data files all live
+there), and the Sveltia prefix matches it directly: `prefix: data/`
+(the trailing slash matters — Sveltia concatenates `prefix + filename`
+verbatim without inserting a separator).
+
+The IAM user `brigitte-le-roux-website-sveltia-media-manager` is
+scoped to `data/*` for `PutObject` + `PutObjectAcl`. `ListBucket` is
+bucket-wide (no `s3:prefix` condition) because Sveltia's media picker
+enumerates root without specifying a prefix. The bucket is already
+publicly readable via CloudFront, so unconditional `ListBucket`
+exposes no additional information.
+
+#### Image / file widgets, not string
+
+Sveltia only renders an upload affordance for fields declared as
+`widget: image` or `widget: file`. A `widget: string` field for a
+file path looks similar in the editor but has no picker. The home
+page's `portrait.src` field was migrated to `widget: image` in Plan 9.
+Other media-reference fields (publication `pdf`, book `book_review_url`,
+review `url`, etc.) remain `widget: string` for v1 — converting them
+case-by-case is a follow-up.
+
+#### Sveltia commits binaries to git, not just S3
+
+When Sveltia saves an entry that references a newly-uploaded image,
+the github-gateway proxy commits BOTH the markdown change AND the
+binary file into the repo. The `.gitignore` rule that hides
+`packages/website/public/data/*` from local commits is enforced by
+the local `git` client — github-gateway uses the GitHub Contents API
+and bypasses it. Net: binaries can sneak into the tree via the CMS
+even though they're declaratively ignored. This is harmless (S3 is
+canonical and the public-site deploy's `yarn frontend:deploy` doesn't
+re-sync `data/*` from git — the GHA workflow explicitly `--exclude`s
+the prefix). If snuck-in binaries accumulate noticeably, a periodic
+sweep can `git rm` them.
+
+#### Out of scope for v1
+
+- **Per-field prefix routing.** Sveltia supports only one global S3
+  prefix per media library. With `data/` covering everything, this is
+  no longer a real limitation. Revisit only if a future
+  organisational scheme needs separation.
 - **Deleting media.** No DELETE endpoint is exposed by the
   media-manager. Replacing an existing file is supported (PUT to the
   same key overwrites). Removing a file's link from a page is
@@ -754,6 +816,11 @@ Out of scope for v1:
   `packages/website/content/` is the safer next step (no UX changes
   required, no risk of accidental delete via typo from an editor who
   can't see the filesystem). Revisit when needed.
+- **CloudFront cache invalidation on file replace.** Replacing
+  `/data/foo.jpg` with new bytes leaves CloudFront serving the OLD
+  content until the 24h CachingOptimized TTL expires. Acceptable
+  given the editor's expected cadence; a follow-up Lambda that
+  subscribes to S3 events + creates invalidations is the proper fix.
 
 ## §5 — CI/CD (website only)
 

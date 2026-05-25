@@ -332,29 +332,34 @@ Expected:
 
 ### Task 5: Deploy + invalidate
 
-- [ ] **Step 1: Upload the two changed files to S3**
+⚠️ **NEVER use a surgical `aws s3 cp` on the CMS files of a working
+tree that diverges from `main`.** The `deploy-website` GHA workflow
+runs on every push to `main`, rebuilds from main's HEAD, and
+`aws s3 sync --delete`s `dist/` over the bucket — overwriting any
+surgical upload that doesn't match main. The Plan 9 smoke testing
+hit this race twice (an unrelated push to main triggered GHA, which
+clobbered the just-uploaded shim + config). The only safe deploy
+paths are the two below.
 
-The deploy script (`yarn frontend:deploy`) handles this end-to-end, but for a CMS-only change we can be more surgical (avoids a full Astro rebuild + main-site invalidation). Either path works.
-
-**Surgical path:**
-
-```bash
-aws s3 cp packages/website/public/cms/config.yml \
-  s3://brigitte-le-roux-website/cms/config.yml \
-  --content-type 'text/yaml; charset=utf-8'
-
-aws s3 cp packages/website/public/cms/auth/index.html \
-  s3://brigitte-le-roux-website/cms/auth/index.html \
-  --content-type 'text/html; charset=utf-8'
-```
-
-OR full-pipeline path (also fine, just slower):
+- [ ] **Step 1: Deploy via local script (preferred for CMS-only changes)**
 
 ```bash
 yarn frontend:deploy 2>&1 | tail -5
 ```
 
-⚠️ Use `timeout: 600000` if you go the `yarn frontend:deploy` route.
+⚠️ Use `timeout: 600000`. Runs the Astro build (no-op for CMS-only
+changes) + full S3 sync + public-site CloudFront invalidation. Safe
+against the GHA race because nothing else is racing with this script
+locally — there's only one sync writer.
+
+OR — **commit + push to main, let GHA deploy** (also safe, takes ~2 min):
+
+```bash
+git add packages/website/public/cms/auth/index.html packages/website/public/cms/config.yml
+git commit -m "<see Task 8>"  # actual commit happens in Task 8
+git push origin main
+gh run watch  # wait for deploy-website workflow
+```
 
 - [ ] **Step 2: Invalidate the CMS distribution's edge cache for /cms/***
 
@@ -605,6 +610,59 @@ gh run list --workflow=deploy-website.yml --limit 1 --json status,headSha,create
 The path filter is `packages/website/**`. The CMS commit DOES touch that path (we modified files under `packages/website/public/cms/`), so the workflow WILL run. That's fine — it's a no-op for the public site (config + shim files don't affect the Astro build output).
 
 Wait for the run to complete: `gh run watch` (optional).
+
+---
+
+## Execution deviations (recorded post-smoke)
+
+These came up during the smoke test (Task 6) and required Plan 9 to
+grow beyond the originally-described CMS-only edits. Captured here
+so the next reader doesn't re-discover them.
+
+1. **Surgical `aws s3 cp` is unsafe** when working-tree CMS files
+   diverge from `main` — see Task 5's warning callout. The race bit
+   twice during smoke; once the migration commit (`2a65ee6`) was
+   pushed to main, GHA rebuilt and overwrote the surgical uploads
+   with the pre-Plan-9 versions still in main's HEAD.
+
+2. **Sveltia hardcodes `x-amz-acl: public-read`** on every PUT with
+   no config knob to suppress it. Three AWS-side accommodations
+   landed in this plan beyond what was originally scoped (see also
+   spec §4):
+   - `aws_s3_bucket_ownership_controls.site` set to
+     `BucketOwnerPreferred` (was the implicit `BucketOwnerEnforced`
+     default — which rejects all ACL headers).
+   - `aws_s3_bucket_public_access_block.block_public_acls = false`
+     (kept `ignore_public_acls = true` so the ACL is set but inert).
+   - IAM policy adds `s3:PutObjectAcl` alongside `s3:PutObject`
+     (`data/*` scope unchanged).
+
+3. **IAM `ListBucket` cannot have an `s3:prefix StringLike data/*`
+   condition.** Sveltia's media picker calls ListBucket without (or
+   with a non-matching) prefix, so the condition denies the request.
+   Loosened to bucket-wide ListBucket; the bucket is publicly
+   readable via CloudFront anyway so this exposes nothing new.
+
+4. **Sveltia's `prefix` config needs a trailing slash.** The plan's
+   `prefix: data` produced PUTs against `dataphoto.jpg` (no separator
+   inserted). Fixed to `prefix: data/`.
+
+5. **`portrait.src` must be `widget: image`, not `widget: string`.**
+   Plain string widgets have no file picker; Sveltia only renders one
+   for image/file widgets. Plan 9 originally assumed an image widget
+   was already in place. Other media-reference fields (publication
+   `pdf`, book review URLs, etc.) remain `widget: string` for v1.
+
+6. **Sveltia commits binary uploads to git** via the github-gateway
+   proxy, alongside the S3 PUT. Local `.gitignore` doesn't block this
+   (the commit goes through the GitHub Contents API). Harmless
+   because the GHA deploy `--exclude`s `data/*` from the sync (S3 is
+   canonical), but artefacts can accumulate in git. A periodic
+   `git rm packages/website/public/data/*` sweep cleans them up.
+
+7. **Sveltia secret in localStorage** is keyed on `sveltia-cms.prefs`
+   (object) → `apiKeys.aws_s3` (string). Confirmed correct path via
+   reading Sveltia source; verified via DevTools during smoke.
 
 ---
 
