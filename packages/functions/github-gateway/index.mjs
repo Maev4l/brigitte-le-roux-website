@@ -13,6 +13,7 @@ import {
   findForbiddenPath,
   extractPathsFromContentsApi,
   extractPathsFromTreeBody,
+  extractPathsFromGraphqlBody,
 } from './lib/allowlist.mjs';
 import { injectCommitAuthor } from './lib/commit-author.mjs';
 import { getOctokit } from './lib/octokit.mjs';
@@ -102,6 +103,19 @@ export const handler = async (event) => {
       }
       if (!parsed || typeof parsed.query !== 'string') {
         return json(400, { error: 'GraphQL request missing query' });
+      }
+      // Path allowlist coverage for createCommitOnBranch mutations.
+      // Sveltia uses GraphQL (not the REST Contents/Trees API) for its
+      // multi-file commits, so the REST-side allowlist below doesn't
+      // see them. Without this check, a compromised Cognito session
+      // could commit to ANY path the GitHub App has write access to
+      // (e.g., packages/functions/, .github/workflows/).
+      const graphqlPaths = extractPathsFromGraphqlBody(parsed);
+      if (graphqlPaths.length > 0) {
+        const forbidden = findForbiddenPath(graphqlPaths);
+        if (forbidden) {
+          return json(403, { error: 'Path not in allowlist', path: forbidden });
+        }
       }
       const octokit = await getOctokit();
       try {
