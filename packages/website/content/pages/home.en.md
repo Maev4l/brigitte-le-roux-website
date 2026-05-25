@@ -1,31 +1,35 @@
 ---
-title: "Brigitte Le Roux"
-locale: en
-slug: "home"
-description: "Homepage of Brigitte Le Roux, researcher specialising in Geometric Data Analysis."
+title: Brigitte Le Roux
+locale: fr
+slug: home
 page_layout: home
-kicker: "Geometric Data Analysis · Research"
-deck_html: "Mathematician. Geometric Data Analysis — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>and CEVIPOF&nbsp;/&nbsp;CNRS."
+description: Homepage of Brigitte Le Roux, researcher specialising in Geometric Data Analysis.
+kicker: Geometric Data Analysis · Research
+deck_html: Mathematician. Geometric Data Analysis — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>and CEVIPOF&nbsp;/&nbsp;CNRS.
 portrait:
-  src: "/data/photoweb.jpg"
-  alt: "Brigitte Le Roux"
+  src: /data/photo-jrsue.jpeg
+  alt: Brigitte Le Roux
 tiles:
   affiliations:
-    title: "Affiliations"
-    body_html: "MAP5 — Université Paris Cité<br>CEVIPOF / CNRS"
-    note: "45 rue des Saints-Pères · 75270 Paris · Office 731-E"
+    title: Affiliations
+    body_html: MAP5 — Université Paris Cité<br>CEVIPOF / CNRS
+    note: 45 rue des Saints-Pères · 75270 Paris · Office 731-E
   methodes:
-    title: "Methods"
+    title: Methods
     items:
-      - { label: "Multiple Correspondence Analysis",  ab: "MCA" }
-      - { label: "Principal Component Analysis",      ab: "PCA" }
-      - { label: "Structured Data Analysis",          ab: "—" }
-      - { label: "Combinatorial Inference",           ab: "—" }
+      - label: Multiple Correspondence Analysis
+        ab: MCA
+      - label: Principal Component Analysis
+        ab: PCA
+      - label: Structured Data Analysis
+        ab: —
+      - label: Combinatorial Inference
+        ab: —
   nouveau:
-    title: "New"
-    book_title: "Combinatorial Inference in Geometric Data Analysis"
-    book_href: "/en/livres/cigda"
-    book_meta: "B. Le Roux & H. Rouanet — Chapman & Hall / CRC, 2019."
+    title: New
+    book_title: Combinatorial Inference in Geometric Data Analysis
+    book_href: /livres/cigda
+    book_meta: B. Le Roux & H. Rouanet — Chapman & Hall / CRC, 2019.
 ---
 
 Brigitte Le Roux's work focuses on *Geometric Data Analysis* (GDA) and its applications, an approach at the crossroads of multivariate statistics, quantitative sociology and political science.
