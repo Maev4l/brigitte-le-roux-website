@@ -152,6 +152,44 @@
       });
     }
 
+    // Plan 9: after Cognito SRP succeeds we have an id_token in hand.
+    // Use it to fetch the dedicated S3-uploader IAM user's access key
+    // + secret from /api/media/s3-credentials, then stash the secret
+    // into Sveltia's preferences-storage key (sveltia-cms.prefs.apiKeys.aws_s3).
+    // Sveltia reads this synchronously when the editor opens an asset
+    // browser — by the time the shim's postMessage completes and the
+    // popup closes, Sveltia's auth state is ready AND its S3 secret is
+    // pre-populated. Editor never enters credentials.
+    //
+    // Failure is non-fatal: media uploads will surface the missing-secret
+    // error in Sveltia's UI on first attempt; auth still succeeds.
+    async function fetchAndStashS3Credentials(idToken) {
+      try {
+        var response = await fetch('/api/media/s3-credentials', {
+          headers: { 'Authorization': 'Bearer ' + idToken },
+        });
+        if (!response.ok) {
+          console.warn('media-manager /s3-credentials returned', response.status);
+          return;
+        }
+        var creds = await response.json();
+        if (!creds || typeof creds.secret_access_key !== 'string') {
+          console.warn('media-manager response missing secret_access_key');
+          return;
+        }
+        var rawPrefs = localStorage.getItem('sveltia-cms.prefs');
+        var prefs = {};
+        if (rawPrefs) {
+          try { prefs = JSON.parse(rawPrefs); } catch (_) { prefs = {}; }
+        }
+        prefs.apiKeys = prefs.apiKeys || {};
+        prefs.apiKeys.aws_s3 = creds.secret_access_key;
+        localStorage.setItem('sveltia-cms.prefs', JSON.stringify(prefs));
+      } catch (err) {
+        console.warn('failed to stash S3 credentials', err && err.message);
+      }
+    }
+
     postToOpener('authorizing:' + provider);
 
     var sveltiaReady = false;
@@ -176,6 +214,10 @@
         while (!sveltiaReady && Date.now() < deadline) {
           await new Promise(function (r) { setTimeout(r, 50); });
         }
+
+        // Plan 9: fetch + stash S3 creds so Sveltia's media library
+        // has the secret ready immediately after the popup closes.
+        await fetchAndStashS3Credentials(idToken);
 
         postAuthorizationSuccess(idToken);
 

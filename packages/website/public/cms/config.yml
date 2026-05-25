@@ -9,8 +9,9 @@
 #   4. Edits are committed straight to main; deploy-website workflow
 #      picks them up and rebuilds the site.
 #
-# Media library: NOT configured here yet — Plan 9 adds media_libraries.aws_s3
-# once the credentials bootstrap is in place. Text-only editing for now.
+# Media library: Sveltia's built-in S3 client uploads to
+# s3://brigitte-le-roux-website/data/* — see the media_libraries.aws_s3
+# block below.
 
 backend:
   name: github
@@ -22,17 +23,37 @@ backend:
 site_url: https://brigitte-le-roux.com
 display_url: https://brigitte-le-roux.com
 
-# Sveltia requires a top-level media_folder even when individual
-# collections override it (narrative_pages below sets media_folder: ""
-# explicitly, but Sveltia's config validator errors out without a
-# top-level default). Pointing it at packages/website/public/img is safe:
-# (1) the github-gateway path allowlist rejects any commit to
-# packages/website/public/* so a stray Internal-media upload would fail
-# closed at the proxy, and (2) Plan 9 adds media_libraries.aws_s3 which
-# supersedes the Internal media library entirely — uploads will go to
-# S3 directly, never through git.
-media_folder: packages/website/public/img
-public_folder: /img
+# Top-level media_folder / public_folder are no longer the active path —
+# media_libraries.aws_s3 below takes precedence. We leave them set to
+# packages/website/public/data / /data as defense-in-depth: if Sveltia
+# ever falls back to its Internal media library, a stray upload would
+# target the website's public/ tree and the github-gateway's path
+# allowlist would reject the commit (so editor sees an error rather
+# than silent success against an unintended location).
+media_folder: packages/website/public/data
+public_folder: /data
+
+# Plan 9: Sveltia's built-in S3 media library. The IAM user
+# `brigitte-le-roux-website-sveltia-media-manager` is scoped to
+# PutObject + ListBucket on s3://brigitte-le-roux-website/data/*.
+# All CMS uploads land at /data/<filename> — the site uses a single
+# flat /data/* URL space (set up in the pre-Plan-9 migration), so the
+# Sveltia prefix matches the site convention directly.
+#
+# The access_key_id below is half of the credential pair — visible to
+# anyone with internet access to /cms/config.yml. The secret lives in
+# localStorage (sveltia-cms.prefs.apiKeys.aws_s3) and is auto-populated
+# by the OAuth shim on login (see auth/index.html — Plan 9 update).
+# Rotating the IAM user's keys: update the SecureString, update the
+# access_key_id below, redeploy.
+media_libraries:
+  aws_s3:
+    access_key_id: AKIAZYQQSAFM57I35NXE
+    bucket: brigitte-le-roux-website
+    region: eu-central-1
+    prefix: data/
+    public_url: https://brigitte-le-roux.com
+    force_path_style: false
 
 i18n:
   structure: multiple_files
@@ -105,7 +126,7 @@ collections:
             widget: object
             i18n: true
             fields:
-              - { name: src, label: "Chemin de l'image (ex. /data/photo.jpg)", widget: string, i18n: duplicate }
+              - { name: src, label: "Image", widget: image, i18n: duplicate }
               - { name: alt, label: "Texte alternatif",                       widget: string, i18n: true }
           - name: tiles
             label: "Tuiles"
