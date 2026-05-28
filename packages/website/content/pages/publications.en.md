@@ -2,7 +2,8 @@
 title: "Publications"
 locale: en
 slug: publications
-description: "Articles, chapters and presentations sorted by year."
+description: "Scientific publications of Brigitte Le Roux: articles, technical reports and presentations in Geometric Data Analysis and quantitative sociology."
+keywords: "Brigitte Le Roux publications, MCA, GDA, Lebaron, Bonnet, Rouanet, Bourdieu, field, quantitative sociology, scientific articles"
 page_layout: publications
 publications:
   - slug: "bienaise-le-roux-2017-combinatorial-typicality"

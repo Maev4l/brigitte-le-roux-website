@@ -3,7 +3,8 @@ title: "Thèse & HDR"
 locale: fr
 slug: "these"
 category: narrative
-description: "Thèse de doctorat (1970) et habilitation à diriger des recherches (2000) de Brigitte Le Roux."
+description: "Thèse de doctorat et HDR de Brigitte Le Roux en analyse géométrique des données (AGD), MAP5 Université Paris Cité."
+keywords: "Brigitte Le Roux thèse, HDR, doctorat, analyse géométrique des données, AGD, MAP5, Université Paris Cité"
 ---
 
 ## Thèse de doctorat

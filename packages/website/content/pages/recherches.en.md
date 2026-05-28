@@ -3,7 +3,8 @@ title: "Research activities"
 locale: en
 slug: "recherches"
 category: narrative
-description: "Research themes in Geometric Data Analysis: foundations, MCA, structured data analysis, combinatorial inference and applications."
+description: "Research in Geometric Data Analysis: Multiple Correspondence Analysis, quantitative sociology, case studies, social spaces."
+keywords: "Geometric Data Analysis, GDA, MCA, Multiple Correspondence Analysis, quantitative sociology, applied statistics, Bourdieu, social space, case studies"
 ---
 
 Brigitte Le Roux's research activities are organised around **Geometric Data Analysis** (GDA), that is, methods of multidimensional Euclidean analysis and their applications to the human and biological sciences.

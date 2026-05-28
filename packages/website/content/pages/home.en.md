@@ -3,7 +3,8 @@ title: Brigitte Le Roux
 locale: fr
 slug: home
 page_layout: home
-description: Homepage of Brigitte Le Roux, researcher specialising in Geometric Data Analysis.
+description: "Brigitte Le Roux, researcher in Geometric Data Analysis (GDA) and Multiple Correspondence Analysis (MCA), MAP5 Université Paris Cité and CEVIPOF/CNRS."
+keywords: "Brigitte Le Roux, Geometric Data Analysis, GDA, Multiple Correspondence Analysis, MCA, MAP5, CEVIPOF, Université Paris Cité"
 kicker: Geometric Data Analysis · Research
 deck_html: Mathematician. Geometric Data Analysis — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>and CEVIPOF&nbsp;/&nbsp;CNRS.
 portrait:

@@ -3,7 +3,8 @@ title: "Thesis & HDR"
 locale: en
 slug: "these"
 category: narrative
-description: "Doctoral thesis (1970) and habilitation (2000) by Brigitte Le Roux."
+description: "Doctoral thesis and HDR of Brigitte Le Roux in Geometric Data Analysis (GDA), MAP5 Université Paris Cité."
+keywords: "Brigitte Le Roux thesis, HDR, doctorate, Geometric Data Analysis, GDA, MAP5, Université Paris Cité"
 ---
 
 ## Doctoral Thesis

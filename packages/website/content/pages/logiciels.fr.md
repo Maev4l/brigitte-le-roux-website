@@ -3,7 +3,8 @@ title: "Logiciels & données"
 locale: fr
 slug: "logiciels"
 category: narrative
-description: "Jeux de données, scripts R, logiciels et textes de référence pour l'analyse géométrique des données."
+description: "Logiciels et fichiers de données pour l'analyse géométrique des données : Eyelid, ADDAD et jeux de données téléchargeables."
+keywords: "logiciels analyse géométrique des données, Eyelid, ADDAD, AGD, ACM, fichiers de données, datasets, statistique"
 ---
 
 ## Fichiers de données

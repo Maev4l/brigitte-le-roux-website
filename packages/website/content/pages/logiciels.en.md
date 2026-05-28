@@ -3,7 +3,8 @@ title: "Software & Data"
 locale: en
 slug: "logiciels"
 category: narrative
-description: "Datasets, R scripts, software and reference texts for Geometric Data Analysis."
+description: "Software and datasets for Geometric Data Analysis: Eyelid, ADDAD, and downloadable data files."
+keywords: "Geometric Data Analysis software, Eyelid, ADDAD, GDA, MCA, datasets, data files, statistics"
 ---
 
 ## Data Files

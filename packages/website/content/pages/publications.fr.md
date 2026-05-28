@@ -2,7 +2,8 @@
 title: "Publications"
 locale: fr
 slug: publications
-description: "Articles, chapitres et présentations classés par année."
+description: "Publications scientifiques de Brigitte Le Roux : articles, rapports techniques et communications en analyse géométrique des données et sociologie quantitative."
+keywords: "publications Brigitte Le Roux, ACM, AGD, Lebaron, Bonnet, Rouanet, Bourdieu, champ, sociologie quantitative, articles scientifiques"
 page_layout: publications
 publications:
   - slug: "bienaise-le-roux-2017-combinatorial-typicality"

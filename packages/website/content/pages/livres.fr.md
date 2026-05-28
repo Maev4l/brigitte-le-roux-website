@@ -2,7 +2,8 @@
 title: "Livres"
 locale: fr
 slug: livres
-description: "Livres et chapitres autour de l'analyse géométrique des données."
+description: "Livres de Brigitte Le Roux sur l'analyse géométrique des données : Combinatorial Inference in GDA (Chapman & Hall/CRC), Geometric Data Analysis, ouvrages traduits."
+keywords: "Brigitte Le Roux livres, Combinatorial Inference in Geometric Data Analysis, CIGDA, Geometric Data Analysis, GDA, Chapman & Hall, analyse géométrique des données"
 page_layout: books
 books:
   - slug: "cigda"

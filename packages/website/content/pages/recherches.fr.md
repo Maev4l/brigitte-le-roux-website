@@ -3,7 +3,8 @@ title: "Activités de recherche"
 locale: fr
 slug: "recherches"
 category: narrative
-description: "Axes de recherche en Analyse Géométrique des Données : fondements, ACM, données structurées, inférence combinatoire et applications."
+description: "Recherches en analyse géométrique des données : analyse des correspondances multiples, sociologie quantitative, études de cas, espaces sociaux."
+keywords: "analyse géométrique des données, AGD, ACM, sociologie quantitative, statistique appliquée, espace social, Bourdieu, études de cas"
 ---
 
 Les activités de recherche de Brigitte Le Roux s'organisent autour de l'**Analyse Géométrique des Données** (AGD), c'est-à-dire les méthodes d'analyse multidimensionnelle euclidienne et leurs applications aux sciences humaines et biologiques.

@@ -3,8 +3,8 @@ title: Brigitte Le Roux
 locale: fr
 slug: home
 page_layout: home
-description: Page d'accueil de Brigitte Le Roux, chercheuse spécialiste de l'analyse géométrique des données.
-keywords: ''
+description: "Brigitte Le Roux, chercheuse en analyse géométrique des données (AGD) et analyse des correspondances multiples (ACM), MAP5 Université Paris Cité et CEVIPOF/CNRS."
+keywords: "Brigitte Le Roux, analyse géométrique des données, AGD, analyse des correspondances multiples, ACM, MAP5, CEVIPOF, Université Paris Cité"
 kicker: Analyse géométrique des données · Recherche
 deck_html: Chercheuse en mathématiques. Analyse géométrique des données — MAP5,&nbsp;Université&nbsp;Paris&nbsp;Cité,<br>et CEVIPOF&nbsp;/&nbsp;CNRS.
 portrait:
