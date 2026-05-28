@@ -73,13 +73,25 @@ const PUBLICATION_TYPE_MAP = {
   slides: 'PresentationDigitalDocument',
 };
 
+// The container that hosts a publication varies by publication type: a journal
+// article lives in a Periodical, a chapter or translated book lives in a Book,
+// and conference slides live in a generic CreativeWork (no canonical Schema.org
+// type for a slide-deck venue). Hard-coding `Periodical` produced JSON-LD that
+// Google's Rich Results validator flagged as semantically wrong for chapters.
+const VENUE_TYPE_MAP = {
+  article: 'Periodical',
+  book: 'Book',
+  chapter: 'Book',
+  slides: 'CreativeWork',
+};
+
 export const publicationSchema = (pub) => compact({
   '@context': CONTEXT,
   '@type': PUBLICATION_TYPE_MAP[pub.type] || 'CreativeWork',
   name: pub.title,
   author: pub.authors.map(personFromName),
   datePublished: String(pub.year),
-  isPartOf: pub.venue ? { '@type': 'Periodical', name: pub.venue } : undefined,
+  isPartOf: pub.venue ? { '@type': VENUE_TYPE_MAP[pub.type] || 'CreativeWork', name: pub.venue } : undefined,
   pagination: pub.pages || undefined,
   // Prefer the local PDF over the external link — PDFs are concrete artifacts
   // Google can index; external links may be paywalled.

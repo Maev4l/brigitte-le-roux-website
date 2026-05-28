@@ -84,6 +84,28 @@ test('publicationSchema dispatches on type', () => {
   assert.equal(slides['@type'], 'PresentationDigitalDocument');
 });
 
+test('publicationSchema isPartOf type follows publication type', () => {
+  const article = publicationSchema({
+    slug: 'x', year: 2013, title: 'T', authors: ['A'], venue: 'V', type: 'article',
+  });
+  assert.equal(article.isPartOf['@type'], 'Periodical');
+
+  const chapter = publicationSchema({
+    slug: 'x', year: 2013, title: 'T', authors: ['A'], venue: 'V', type: 'chapter',
+  });
+  assert.equal(chapter.isPartOf['@type'], 'Book');
+
+  const book = publicationSchema({
+    slug: 'x', year: 2013, title: 'T', authors: ['A'], venue: 'V', type: 'book',
+  });
+  assert.equal(book.isPartOf['@type'], 'Book');
+
+  const slides = publicationSchema({
+    slug: 'x', year: 2013, title: 'T', authors: ['A'], venue: 'V', type: 'slides',
+  });
+  assert.equal(slides.isPartOf['@type'], 'CreativeWork');
+});
+
 test('publicationSchema includes pdf url when present', () => {
   const s = publicationSchema({
     slug: 'x', year: 2013, title: 'T', authors: ['A'], venue: 'V', type: 'article',
