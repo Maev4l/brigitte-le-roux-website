@@ -1,0 +1,14 @@
+{
+  "name": "Brigitte Le Roux",
+  "givenName": "Brigitte",
+  "familyName": "Le Roux",
+  "jobTitle": {
+    "fr": "Chercheuse en analyse géométrique des données",
+    "en": "Researcher in Geometric Data Analysis"
+  },
+  "affiliation": [
+    { "name": "MAP5, Université Paris Cité", "url": "https://map5.mi.parisdescartes.fr/" },
+    { "name": "CEVIPOF, CNRS / Sciences Po", "url": "https://www.sciencespo.fr/cevipof/" }
+  ],
+  "sameAs": []
+}
