@@ -318,6 +318,49 @@ most pages can rely on the defaults.
 `hreflang` alternates are auto-suppressed for pages without a translation
 (e.g. `/bureau/` is FR-only and emits only `hreflang="fr"` plus `x-default`).
 
+### JSON-LD structured data
+
+Identity facts (name, affiliations, ORCID/Scholar/ResearchGate URLs) live in
+**one** locale-agnostic file: `packages/website/content/identity.json`. The
+schema for that file is enforced at module-load time by
+`packages/website/src/lib/identity.mjs` (Zod). To update Brigitte's external
+identity links, edit `identity.json` and rebuild — no code change.
+
+JSON-LD payloads are built by pure functions in
+`packages/website/src/lib/schema.mjs` (`personSchema`, `websiteSchema`,
+`bookSchema`, `publicationSchema`, `breadcrumbList`) and emitted by a single
+component, `packages/website/src/components/StructuredData.astro`, which
+wraps a `<script type="application/ld+json">` tag.
+
+Where each schema is injected:
+
+- `BaseLayout.astro` → `Person` on every page.
+- `HomeLayout.astro` → `WebSite` + `SearchAction` on the home page.
+- `BooksLayout.astro` → one `Book` per `books:` entry, wrapped in `@graph`.
+- `PublicationsLayout.astro` → one `ScholarlyArticle` / `Book` / `Chapter` /
+  `PresentationDigitalDocument` per `publications:` entry (dispatched on
+  `type`), wrapped in `@graph`.
+- `PageLayout.astro` → `BreadcrumbList` on detail pages only (paths with
+  ≥ 2 segments, e.g. `/livres/cigda/`).
+
+To add a new schema type: write a builder in `schema.mjs`, add a test in
+`schema.test.mjs`, run `yarn --cwd packages/website test:schema`, and import
+it in the layout that owns it.
+
+### Google Search Console
+
+`BaseLayout.astro` carries a `googleSiteVerification` constant. When the site
+is registered with Search Console, set this constant to the value Google
+issues; the verification `<meta>` tag is then emitted on every page. Leave
+null until you have a real value — no placeholder ships.
+
+### Self-hosted fonts
+
+Fraunces and Bricolage Grotesque are SIL OFL variable fonts served from
+`packages/website/public/fonts/*.woff2`. `@font-face` declarations live at
+the top of `packages/website/src/styles/theme.css`. To update a font, drop
+in a new WOFF2 of the same name and rebuild — no other change required.
+
 ## Build & deploy
 
 ```bash
