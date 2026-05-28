@@ -4,6 +4,9 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import frStrings from '../../content/i18n/fr.json';
 import enStrings from '../../content/i18n/en.json';
+import { identity } from '../lib/identity.mjs';
+import { personSchema } from '../lib/schema.mjs';
+import StructuredData from '../components/StructuredData.astro';
 
 const { title, locale = 'fr', description, keywords, mainClass = 'container' } = Astro.props;
 
@@ -37,6 +40,11 @@ const enExists = `../../content/pages/${slug}.en.md` in allPages;
 
 const frUrl = new URL(slug === 'home' ? '/' : `/${slug}/`, Astro.site).href;
 const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).href;
+
+// Person JSON-LD is emitted on every page — the primary brand-authority signal
+// for search engines. Site URL is trailing-slash-stripped to keep the
+// structured data clean (Astro.site.href ends with `/`).
+const personLd = personSchema(identity, Astro.site.href.replace(/\/$/, ''), locale);
 ---
 
 <!DOCTYPE html>
@@ -74,6 +82,8 @@ const enUrl = new URL(slug === 'home' ? '/en/' : `/en/${slug}/`, Astro.site).hre
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&display=swap" rel="stylesheet" />
+
+  <StructuredData schema={personLd} />
 </head>
 <body>
   <Header locale={locale} />
