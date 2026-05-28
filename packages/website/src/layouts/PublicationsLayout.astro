@@ -1,5 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { publicationSchema } from '../lib/schema.mjs';
+import StructuredData from '../components/StructuredData.astro';
 
 const { entry, locale, Content } = Astro.props;
 const data = entry.data;
@@ -13,6 +15,7 @@ const t = locale === 'en'
 const localePrefix = locale === 'en' ? 'en/' : '';
 
 const publicationsData = (data.publications ?? []).slice().sort((a, b) => b.year - a.year);
+const publicationLds = publicationsData.map(publicationSchema);
 
 // Group publications by year for the year-marker rendering.
 const publicationsByYear = publicationsData.reduce((acc, p) => {
@@ -28,6 +31,7 @@ const publicationYearsDesc = Object.keys(publicationsByYear).sort((a, b) => Numb
   description={data.description}
   keywords={data.keywords}
 >
+  {publicationLds.length > 0 && <StructuredData schema={publicationLds} />}
   <Content />
   {data.intro_link_html && (
     <p class="pub-intro-link" set:html={data.intro_link_html}></p>
