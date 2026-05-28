@@ -1,5 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { bookSchema } from '../lib/schema.mjs';
+import StructuredData from '../components/StructuredData.astro';
 
 const { entry, locale, Content } = Astro.props;
 const data = entry.data;
@@ -13,6 +15,9 @@ const t = locale === 'en'
 const localePrefix = locale === 'en' ? 'en/' : '';
 
 const booksData = (data.books ?? []).slice().sort((a, b) => b.year - a.year);
+
+// Emit one Book JSON-LD per entry for SEO — books order already sorted desc by year.
+const bookLds = booksData.map(bookSchema);
 ---
 
 <BaseLayout
@@ -21,6 +26,7 @@ const booksData = (data.books ?? []).slice().sort((a, b) => b.year - a.year);
   description={data.description}
   keywords={data.keywords}
 >
+  {bookLds.length > 0 && <StructuredData schema={bookLds} />}
   <Content />
   <ul class="book-list">
     {booksData.map(b => (
