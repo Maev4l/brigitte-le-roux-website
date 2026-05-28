@@ -1,10 +1,40 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { breadcrumbList } from '../lib/schema.mjs';
+import StructuredData from '../components/StructuredData.astro';
+import frStrings from '../../content/i18n/fr.json';
+import enStrings from '../../content/i18n/en.json';
 
 const { title, locale, description, keywords } = Astro.props;
+
+// Detect detail pages: paths with two or more non-empty segments after the
+// locale prefix. /livres/cigda/ → detail; /cv/ → narrative.
+const baseUrl = import.meta.env.BASE_URL;
+const stripped = Astro.url.pathname
+  .replace(new RegExp(`^${baseUrl}`), '')
+  .replace(/^en\//, '')
+  .replace(/\/$/, '');
+const segments = stripped.split('/').filter(Boolean);
+const isDetail = segments.length >= 2;
+
+// For the breadcrumb, the parent listing's label comes from i18n (e.g. "Livres" /
+// "Books"). nav[<parent-slug>] keeps the label in lockstep with the header nav.
+const strings = locale === 'en' ? enStrings : frStrings;
+const parentSlug = isDetail ? segments[0] : null;
+const parentLabel = parentSlug && strings.nav?.[parentSlug];
+
+const siteOrigin = Astro.site.href.replace(/\/$/, '');
+const localePrefix = locale === 'en' ? '/en' : '';
+
+const breadcrumbLd = isDetail && parentLabel ? breadcrumbList([
+  { name: strings.nav.home, url: `${siteOrigin}${localePrefix}/` },
+  { name: parentLabel, url: `${siteOrigin}${localePrefix}/${parentSlug}/` },
+  { name: title, url: `${siteOrigin}${localePrefix}/${stripped}/` },
+]) : null;
 ---
 
 <BaseLayout title={title} locale={locale} description={description} keywords={keywords}>
+  {breadcrumbLd && <StructuredData schema={breadcrumbLd} />}
   <article>
     <h1>{title}</h1>
     <slot />
