@@ -1,3 +1,27 @@
+/* Self-hosted variable fonts. `font-display: swap` shows fallback Georgia / sans-serif
+   immediately while WOFF2 loads, avoiding invisible-text FOIT. */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/bricolage-grotesque-variable.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Le Monde theme — French editorial authority
    Fraunces (variable optical-size serif) + Bricolage Grotesque (UI grotesque)
    Parchment background, top masthead rule, vermillion kicker, dramatic display

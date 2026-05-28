@@ -22,6 +22,12 @@ packages/website/public/*
 !packages/website/public/favicon.ico
 !packages/website/public/apple-touch-icon.png
 
+# Self-hosted variable WOFF2 fonts — small (~40 KB each), track in git so the
+# site renders correctly on fresh clones without needing `yarn frontend:pull`.
+# Self-hosting (vs Google Fonts) is a perf + privacy win; see Plan SEO Task 9.
+!packages/website/public/fonts/
+!packages/website/public/fonts/**
+
 # CMS frontend — Sveltia loader + editorial config + OAuth shim. This is
 # CODE (HTML, JS, YAML), not media, so it belongs in source control.
 # Without this carve-out, `aws s3 sync --delete` during yarn frontend:deploy
