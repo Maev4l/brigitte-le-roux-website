@@ -1,0 +1,11 @@
+---
+// Emits one <script type="application/ld+json"> tag. Accepts either a single
+// schema object or an array (wrapped in @graph). `set:html` is safe here:
+// input is structured data we build ourselves, not user content.
+const { schema } = Astro.props;
+const items = Array.isArray(schema) ? schema : [schema];
+const payload = items.length === 1
+  ? items[0]
+  : { '@context': 'https://schema.org', '@graph': items };
+---
+<script type="application/ld+json" set:html={JSON.stringify(payload)}></script>
