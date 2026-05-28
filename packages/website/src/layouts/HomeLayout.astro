@@ -34,6 +34,7 @@ const websiteLd = websiteSchema(Astro.site.href.replace(/\/$/, ''), locale);
   title={data.title}
   locale={locale}
   description={data.description}
+  keywords={data.keywords}
   mainClass="oped"
 >
   <StructuredData schema={websiteLd} />
