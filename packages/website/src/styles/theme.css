@@ -9,7 +9,7 @@
 }
 @font-face {
   font-family: 'Fraunces';
-  src: url('/fonts/fraunces-variable.woff2') format('woff2-variations');
+  src: url('/fonts/fraunces-italic-variable.woff2') format('woff2-variations');
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
@@ -47,6 +47,10 @@ body {
   color: var(--text);
   font-family: var(--font-display);
   font-size: 16px;
+  /* Safety override: full-axis Fraunces/Bricolage WOFF2 default `wght` to 900/800
+     (heavy end of the axis). Without this, any element without an explicit
+     font-weight would render as Black. */
+  font-weight: 400;
   line-height: var(--line-height);
   -webkit-font-smoothing: antialiased;
 }
