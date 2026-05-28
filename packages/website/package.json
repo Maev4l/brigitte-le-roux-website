@@ -9,7 +9,8 @@
     "preview": "astro preview --port 4321",
     "pull": "bash scripts/pull-public.sh",
     "deploy": "bash scripts/deploy.sh",
-    "check:links": "bash scripts/check-links.sh"
+    "check:links": "bash scripts/check-links.sh",
+    "test:schema": "node --test src/lib/schema.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.2",
