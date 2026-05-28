@@ -1,5 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { websiteSchema } from '../lib/schema.mjs';
+import StructuredData from '../components/StructuredData.astro';
 
 // `Content` is the Astro component returned by render(entry) — it renders
 // the markdown body of home/{fr,en}.md. Passing it as a prop instead of
@@ -20,6 +22,12 @@ if (!data.tiles || !data.portrait) {
 }
 
 const t = data.tiles;
+
+// WebSite + SearchAction JSON-LD lives only on the home page so Google reads
+// it as the canonical site descriptor — emitting it on every page would
+// dilute the signal. Strip trailing slash to match the personSchema convention
+// in BaseLayout (Astro.site.href ends with `/`).
+const websiteLd = websiteSchema(Astro.site.href.replace(/\/$/, ''), locale);
 ---
 
 <BaseLayout
@@ -28,6 +36,7 @@ const t = data.tiles;
   description={data.description}
   mainClass="oped"
 >
+  <StructuredData schema={websiteLd} />
   <p class="topkicker"><span class="bar"></span>{data.kicker}</p>
 
   <figure class="portrait">
