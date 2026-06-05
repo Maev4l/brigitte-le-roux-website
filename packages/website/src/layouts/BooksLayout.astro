@@ -1,6 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import { bookSchema } from '../lib/schema.mjs';
+import { bookSchema, personId } from '../lib/schema.mjs';
 import StructuredData from '../components/StructuredData.astro';
 
 const { entry, locale, Content } = Astro.props;
@@ -16,8 +16,11 @@ const localePrefix = locale === 'en' ? 'en/' : '';
 
 const booksData = (data.books ?? []).slice().sort((a, b) => b.year - a.year);
 
-// Emit one Book JSON-LD per entry for SEO — books order already sorted desc by year.
-const bookLds = booksData.map(bookSchema);
+// Trailing-slash-stripped site origin matches the personSchema/@id convention.
+const pid = personId(Astro.site.href.replace(/\/$/, ''));
+
+// Emit one Book JSON-LD per entry; Le Roux authorship links to the Person @id.
+const bookLds = booksData.map(b => bookSchema(b, pid));
 ---
 
 <BaseLayout

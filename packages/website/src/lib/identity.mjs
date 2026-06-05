@@ -9,6 +9,11 @@ const schema = z.object({
   givenName: z.string(),
   familyName: z.string(),
   jobTitle: z.object({ fr: z.string(), en: z.string() }),
+  // Optional, machine-only (GEO): a one-paragraph bio and expertise tags,
+  // surfaced in the Person JSON-LD. Optional so identity.json stays valid
+  // if a future edit drops them.
+  description: z.object({ fr: z.string(), en: z.string() }).optional(),
+  knowsAbout: z.object({ fr: z.array(z.string()), en: z.array(z.string()) }).optional(),
   affiliation: z.array(z.object({
     name: z.string(),
     url: z.string().url(),

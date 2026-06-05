@@ -361,6 +361,38 @@ Fraunces and Bricolage Grotesque are SIL OFL variable fonts served from
 the top of `packages/website/src/styles/theme.css`. To update a font, drop
 in a new WOFF2 of the same name and rebuild — no other change required.
 
+## GEO
+
+GEO (Generative Engine Optimization) makes the site a well-understood, citable
+entity for AI answer engines (ChatGPT, Perplexity, Google AI Overviews, Claude,
+Gemini). It is markup-only — nothing here changes what human visitors see.
+
+- **AI crawlers** — `packages/website/src/pages/robots.txt.js` explicitly
+  welcomes the major AI agents (GPTBot, ClaudeBot, PerplexityBot,
+  Google-Extended, CCBot, …) in addition to the `User-agent: *` wildcard. The
+  "allow everything" decision is intentional; edit the `AI_AGENTS` list to
+  adjust.
+- **`/llms.txt`** — `packages/website/src/pages/llms.txt.js` generates a curated
+  Markdown map of the site (bio, FR + EN pages, books, external profiles) at
+  build time from `packages/website/content/identity.json` and the `pages`
+  collection. It never needs manual upkeep; new pages and books appear
+  automatically on rebuild.
+- **Entity graph** — the `Person` node carries a stable `@id` of
+  `${site}#person` (`personId()` in `packages/website/src/lib/schema.mjs`).
+  `bookSchema` and `publicationSchema` link Brigitte's authorship
+  (`startsWith('Le Roux')`) to that `@id` instead of an anonymous author;
+  `websiteSchema` declares her as the site's `author`/`about`. JSON-LD
+  consumers merge these by `@id` across the separate `<script>` tags each
+  layout emits.
+- **Person facts** — `description` and `knowsAbout` (FR/EN) live in
+  `packages/website/content/identity.json`, validated in
+  `packages/website/src/lib/identity.mjs`, and surface in the Person JSON-LD
+  per locale.
+
+Deferred (future spec): a visible FAQ / definition blocks and the `FAQPage`
+JSON-LD that legitimately requires visible Q&A; an `/llms-full.txt` full-text
+dump.
+
 ## Build & deploy
 
 ```bash

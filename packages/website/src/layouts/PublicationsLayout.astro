@@ -1,6 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import { publicationSchema } from '../lib/schema.mjs';
+import { publicationSchema, personId } from '../lib/schema.mjs';
 import StructuredData from '../components/StructuredData.astro';
 
 const { entry, locale, Content } = Astro.props;
@@ -15,7 +15,8 @@ const t = locale === 'en'
 const localePrefix = locale === 'en' ? 'en/' : '';
 
 const publicationsData = (data.publications ?? []).slice().sort((a, b) => b.year - a.year);
-const publicationLds = publicationsData.map(publicationSchema);
+const pid = personId(Astro.site.href.replace(/\/$/, ''));
+const publicationLds = publicationsData.map(p => publicationSchema(p, pid));
 
 // Group publications by year for the year-marker rendering.
 const publicationsByYear = publicationsData.reduce((acc, p) => {

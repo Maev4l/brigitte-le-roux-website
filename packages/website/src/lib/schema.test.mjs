@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  personId,
   personSchema,
   websiteSchema,
   bookSchema,
@@ -124,4 +125,64 @@ test('breadcrumbList builds ordered list', () => {
   assert.equal(s.itemListElement.length, 3);
   assert.equal(s.itemListElement[0].position, 1);
   assert.equal(s.itemListElement[2].name, 'CIGDA');
+});
+
+test('personId derives a #person anchor from site', () => {
+  assert.equal(personId(site), 'https://brigitte-le-roux.com#person');
+});
+
+test('personSchema includes a stable @id derived from site', () => {
+  const s = personSchema(fixtureIdentity, site, 'fr');
+  assert.equal(s['@id'], 'https://brigitte-le-roux.com#person');
+});
+
+test('personSchema includes locale description and knowsAbout when present', () => {
+  const id = {
+    ...fixtureIdentity,
+    description: { fr: 'desc-fr', en: 'desc-en' },
+    knowsAbout: { fr: ['A', 'B'], en: ['X', 'Y'] },
+  };
+  const fr = personSchema(id, site, 'fr');
+  assert.equal(fr.description, 'desc-fr');
+  assert.deepEqual(fr.knowsAbout, ['A', 'B']);
+  const en = personSchema(id, site, 'en');
+  assert.equal(en.description, 'desc-en');
+  assert.deepEqual(en.knowsAbout, ['X', 'Y']);
+});
+
+test('personSchema omits description and knowsAbout when absent', () => {
+  const s = personSchema(fixtureIdentity, site, 'fr');
+  assert.ok(!('description' in s));
+  assert.ok(!('knowsAbout' in s));
+});
+
+test('bookSchema links a Le Roux author to the Person @id when personId given', () => {
+  const s = bookSchema({
+    slug: 'cigda', title: 'T', authors: ['Le Roux, B.', 'Bienaise, S.'],
+    year: 2019, publisher: 'P',
+  }, personId(site));
+  assert.deepEqual(s.author[0], { '@id': 'https://brigitte-le-roux.com#person' });
+  assert.deepEqual(s.author[1], { '@type': 'Person', name: 'Bienaise, S.' });
+});
+
+test('bookSchema keeps anonymous authors when no personId passed', () => {
+  const s = bookSchema({
+    slug: 'x', title: 'T', authors: ['Le Roux, B.'], year: 2019, publisher: 'P',
+  });
+  assert.deepEqual(s.author[0], { '@type': 'Person', name: 'Le Roux, B.' });
+});
+
+test('publicationSchema links a Le Roux author to the Person @id', () => {
+  const s = publicationSchema({
+    slug: 'x', year: 2013, title: 'T', authors: ['Lebaron, F.', 'Le Roux, B.'],
+    venue: 'V', type: 'article',
+  }, personId(site));
+  assert.deepEqual(s.author[0], { '@type': 'Person', name: 'Lebaron, F.' });
+  assert.deepEqual(s.author[1], { '@id': 'https://brigitte-le-roux.com#person' });
+});
+
+test('websiteSchema references the Person @id as author and about', () => {
+  const s = websiteSchema(site, 'fr');
+  assert.deepEqual(s.author, { '@id': 'https://brigitte-le-roux.com#person' });
+  assert.deepEqual(s.about, { '@id': 'https://brigitte-le-roux.com#person' });
 });
