@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint .",
     "dev": "node index.mjs",
-    "build": "esbuild index.mjs --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --external:@aws-sdk/* --banner:js=\"import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);\""
+    "build": "esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.mjs --external:@aws-sdk/* --banner:js=\"import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);\""
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "3.687.0",

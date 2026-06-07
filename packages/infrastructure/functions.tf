@@ -29,7 +29,7 @@ module "github_gateway" {
   # same source.
   zip = {
     filename = local.githubGatewayZip
-    runtime  = "nodejs22.x"
+    runtime  = "nodejs24.x"
     handler  = "index.handler"
     hash     = filebase64sha256(local.githubGatewayBundle)
   }
@@ -98,7 +98,7 @@ module "media_manager" {
   # doesn't trigger spurious updates.
   zip = {
     filename = local.mediaManagerZip
-    runtime  = "nodejs22.x"
+    runtime  = "nodejs24.x"
     handler  = "run.sh"
     hash     = filebase64sha256(local.mediaManagerBundle)
   }
