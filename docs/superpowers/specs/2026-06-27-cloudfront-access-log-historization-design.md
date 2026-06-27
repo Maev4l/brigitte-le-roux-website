@@ -4,6 +4,18 @@
 **Status:** Approved (design)
 **Scope:** `packages/infrastructure` only. No application/Astro/CMS-frontend changes.
 
+> **Amendment (later):** delivery was switched from flat to Hive-partitioned.
+> Each pipeline now carries an `s3_delivery_configuration` block with
+> `suffix_path = "{yyyy}/{MM}/{dd}"` and `enable_hive_compatible_path = true`,
+> so objects land at `raw/site/year=YYYY/month=MM/day=DD/` and
+> `raw/cms/year=YYYY/month=MM/day=DD/`. The per-distribution prefixes
+> (`raw/site/` + `raw/cms/`) are unchanged. All "flat under each prefix" / "no
+> Hive partitioning" / "no `s3_delivery_configuration` block" statements below
+> are superseded. `enable_hive_compatible_path` MUST be true: only then does AWS
+> allow the key=value layout and auto-expand the bare `{yyyy}/{MM}/{dd}`
+> placeholders into `year=/month=/day=` (writing `year={yyyy}` literally while
+> the flag is off is rejected with "Provided suffixPath is invalid").
+
 ## Goal
 
 Capture the client IP and request metadata of every request to both CloudFront

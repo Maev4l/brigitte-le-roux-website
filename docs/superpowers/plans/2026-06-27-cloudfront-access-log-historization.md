@@ -2,9 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Amendment (later):** delivery is Hive-partitioned, not flat. Each delivery
+> resource carries an `s3_delivery_configuration { suffix_path = "{yyyy}/{MM}/{dd}",
+> enable_hive_compatible_path = true }` block, so objects land at
+> `raw/site/year=YYYY/month=MM/day=DD/` and `raw/cms/year=YYYY/month=MM/day=DD/`.
+> The prefixes are unchanged. References below to "flat", "no
+> `s3_delivery_configuration`", and the verification `aws s3 ls` paths should be
+> read with the `year=/month=/day=` sub-partitions appended.
+
 **Goal:** Deliver Parquet access logs from both CloudFront distributions (`site`, `cms`) into one shared S3 bucket, separated by prefix, with 90-day auto-prune — observe-only, infra-only.
 
-**Architecture:** Two parallel CloudWatch "standard logging v2" delivery pipelines (one per distribution) write Parquet to `raw/site/` and `raw/cms/` in a dedicated log bucket. The bucket + its delivery-service write policy live in `s3.tf`; the six delivery resources live in a new `logs.tf`. All delivery resources run in `us-east-1` (CloudFront Delivery API requirement); the bucket is in `eu-central-1`.
+**Architecture:** Two parallel CloudWatch "standard logging v2" delivery pipelines (one per distribution) write Parquet to `raw/site/` and `raw/cms/` (Hive-date-partitioned underneath — see amendment) in a dedicated log bucket. The bucket + its delivery-service write policy live in `s3.tf`; the six delivery resources live in a new `logs.tf`. All delivery resources run in `us-east-1` (CloudFront Delivery API requirement); the bucket is in `eu-central-1`.
 
 **Tech Stack:** Terraform (AWS provider `~> 6.0`), HCL only. No application/Astro/CMS-frontend code.
 

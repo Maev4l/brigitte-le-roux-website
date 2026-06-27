@@ -399,8 +399,13 @@ Both CloudFront distributions emit standard-logging-**v2** access logs as
 Parquet into one dedicated bucket, `brigitte-le-roux-website-cloudfront-logs-<account-id>`,
 separated by prefix:
 
-- `site` distribution (`brigitte-le-roux.com`)     → `raw/site/`
-- `cms` distribution (`cms.brigitte-le-roux.com`) → `raw/cms/`
+- `site` distribution (`brigitte-le-roux.com`)     → `raw/site/year=YYYY/month=MM/day=DD/`
+- `cms` distribution (`cms.brigitte-le-roux.com`) → `raw/cms/year=YYYY/month=MM/day=DD/`
+
+Both pipelines are Hive-date-partitioned under their prefix via
+`s3_delivery_configuration` (`suffix_path = "{yyyy}/{MM}/{dd}"`,
+`enable_hive_compatible_path = true`), so the Parquet stays partition-aware
+for any later query layer.
 
 Observe-only — purpose is security/abuse investigation and light analytics
 (client IP, country, ASN, path, status, UA — the 14-field set). No WAF/blocking,

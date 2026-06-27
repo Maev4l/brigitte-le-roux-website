@@ -10,8 +10,10 @@
 # destination bucket is in eu-central-1 (cross-region delivery is allowed) —
 # hence provider = aws.us_east_1 on every resource here.
 #
-# Two parallel pipelines (one per distribution) write to distinct prefixes:
-#   site → raw/site/ , cms → raw/cms/
+# Two parallel pipelines (one per distribution) write to distinct prefixes,
+# each Hive-date-partitioned underneath:
+#   site → raw/site/year=YYYY/month=MM/day=DD/
+#   cms  → raw/cms/year=YYYY/month=MM/day=DD/
 # ---------------------------------------------------------------------------
 
 locals {
@@ -50,6 +52,17 @@ resource "aws_cloudwatch_log_delivery" "site" {
   delivery_destination_arn = aws_cloudwatch_log_delivery_destination.site.arn
   record_fields            = local.cloudfront_log_fields
 
+  # Hive-style date partitioning UNDER the raw/site prefix => objects land at
+  # raw/site/year=YYYY/month=MM/day=DD/. enable_hive_compatible_path MUST be
+  # true: only then does AWS allow the key=value layout, and it auto-expands the
+  # bare {yyyy}/{MM}/{dd} placeholders into year=/month=/day= (writing
+  # "year={yyyy}" literally is rejected with "Provided suffixPath is invalid"
+  # while the flag is off).
+  s3_delivery_configuration {
+    suffix_path                 = "{yyyy}/{MM}/{dd}"
+    enable_hive_compatible_path = true
+  }
+
   # The bucket policy must exist before delivery starts, else writes fail
   # silently with AccessDenied (the policy is not referenced by ARN, so the
   # dependency is not otherwise inferred).
@@ -79,6 +92,14 @@ resource "aws_cloudwatch_log_delivery" "cms" {
   delivery_source_name     = aws_cloudwatch_log_delivery_source.cms.name
   delivery_destination_arn = aws_cloudwatch_log_delivery_destination.cms.arn
   record_fields            = local.cloudfront_log_fields
+
+  # Hive-style date partitioning UNDER the raw/cms prefix => objects land at
+  # raw/cms/year=YYYY/month=MM/day=DD/. See the site delivery above for why
+  # enable_hive_compatible_path must be true.
+  s3_delivery_configuration {
+    suffix_path                 = "{yyyy}/{MM}/{dd}"
+    enable_hive_compatible_path = true
+  }
 
   depends_on = [aws_s3_bucket_policy.cloudfront_logs]
 }
