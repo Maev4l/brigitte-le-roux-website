@@ -28,3 +28,8 @@ output "cms_distribution_domain" {
   value       = aws_cloudfront_distribution.cms.domain_name
   description = "CMS CloudFront distribution cloudfront.net domain (for debugging via raw URL)."
 }
+
+output "cloudfront_logs_bucket_name" {
+  value       = aws_s3_bucket.cloudfront_logs.id
+  description = "S3 bucket holding CloudFront access logs (Parquet under raw/site/, raw/cms/)."
+}

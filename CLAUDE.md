@@ -393,6 +393,34 @@ Deferred (future spec): a visible FAQ / definition blocks and the `FAQPage`
 JSON-LD that legitimately requires visible Q&A; an `/llms-full.txt` full-text
 dump.
 
+## CloudFront access logs
+
+Both CloudFront distributions emit standard-logging-**v2** access logs as
+Parquet into one dedicated bucket, `brigitte-le-roux-website-cloudfront-logs-<account-id>`,
+separated by prefix:
+
+- `site` distribution (`brigitte-le-roux.com`)     → `raw/site/`
+- `cms` distribution (`cms.brigitte-le-roux.com`) → `raw/cms/`
+
+Observe-only — purpose is security/abuse investigation and light analytics
+(client IP, country, ASN, path, status, UA — the 14-field set). No WAF/blocking,
+no query layer, no dashboard (all deliberately out of scope; the Parquet stays
+queryable later if wanted). A whole-bucket lifecycle rule auto-deletes objects
+after 90 days.
+
+Terraform: the bucket + its delivery-write policy live in
+`packages/infrastructure/s3.tf`; the six delivery resources (2× source /
+destination / delivery, one pipeline per distribution) live in
+`packages/infrastructure/logs.tf`. All delivery resources run in `us-east-1`
+(CloudFront Delivery API requirement) even though the bucket is in
+`eu-central-1`. Record fields are defined once in the `cloudfront_log_fields`
+local — adding a field is a one-line change there.
+
+**Gotcha:** delivery fails *silently* (AccessDenied, nothing surfaced on the
+distribution) if the bucket policy's `aws:SourceAccount` / `aws:SourceArn` /
+`s3:x-amz-acl` conditions or `Resource` are wrong. After any change, verify
+Parquet objects actually appear under both prefixes within ~15 min of traffic.
+
 ## Build & deploy
 
 ```bash
