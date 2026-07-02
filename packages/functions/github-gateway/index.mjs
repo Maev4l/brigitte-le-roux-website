@@ -161,7 +161,7 @@ export const handler = async (event) => {
       let paths;
       if (/\/contents\//.test(githubPath)) {
         paths = extractPathsFromContentsApi(githubPath);
-      } else if (/\/git\/trees$/.test(githubPath) && requestBody) {
+      } else if (githubPath.endsWith('/git/trees') && requestBody) {
         paths = extractPathsFromTreeBody(requestBody);
       } else {
         paths = [];

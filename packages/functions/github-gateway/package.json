@@ -6,7 +6,7 @@
   "description": "Cognito-authenticated proxy from Sveltia to GitHub via a GitHub App",
   "main": "index.mjs",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "oxlint",
     "build": "esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.mjs --external:@aws-sdk/* --banner:js=\"import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);\""
   },
   "dependencies": {
@@ -15,8 +15,7 @@
     "@octokit/rest": "21.0.2"
   },
   "devDependencies": {
-    "@eslint/js": "9.15.0",
     "esbuild": "0.24.0",
-    "eslint": "9.15.0"
+    "oxlint": "1.71.0"
   }
 }
