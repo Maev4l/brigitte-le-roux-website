@@ -10,7 +10,7 @@ Sveltia CMS at `https://cms.brigitte-le-roux.com/`.
 
 ```
 brigitte-leroux-website/
-├── package.json                       # root — scripts only, no deps
+├── Makefile                           # root convenience targets (delegate only)
 ├── packages/
 │   ├── website/                       # Astro 5 static site
 │   │   ├── content/
@@ -60,21 +60,22 @@ cms.brigitte-le-roux.com/cms/                  brigitte-le-roux.com
 ```bash
 yarn --cwd packages/website install        # one-time, in the Astro package
 
-yarn frontend:dev                          # dev server on http://localhost:4321
-yarn frontend:build                        # → packages/website/dist/
-yarn frontend:pull                         # sync public/data/ down from S3
-yarn frontend:deploy                       # build + S3 sync + CloudFront invalidate
+make frontend-dev                          # dev server on http://localhost:4321
+make frontend-build                        # → packages/website/dist/
+make frontend-pull                         # sync public/data/ down from S3
+make frontend-deploy                       # build + S3 sync + CloudFront invalidate
 
-yarn backend:build                         # build Lambda ZIPs (esbuild + zip)
-yarn backend:deploy                        # backend:build + terraform apply
+make backend-build                         # build Lambda ZIPs (esbuild + zip)
+make backend-deploy                        # backend-build + terraform apply
 
-yarn infra:plan                            # terraform plan
-yarn infra:apply                           # terraform apply
+make infra-plan                            # terraform plan
+make infra-apply                           # terraform apply
 ```
 
-All scripts delegate to per-package commands via `yarn --cwd` and
-`terraform -chdir` — there are no yarn workspaces; each package has its
-own `package.json` with strict-pinned deps.
+The root `Makefile` targets delegate to per-package commands via
+`yarn --cwd`, `make -C` and `terraform -chdir` — there are no yarn
+workspaces; each package has its own `package.json` with strict-pinned
+deps.
 
 ## Editing content
 
@@ -161,8 +162,8 @@ exceed GitHub's 100 MB per-file limit), and Sveltia's S3 media library
 writes new uploads directly to S3 (not via git). To repopulate locally:
 
 ```bash
-yarn frontend:pull                  # sync public/data/ from S3
-yarn frontend:pull --delete         # also delete files no longer in S3
+make frontend-pull                          # sync public/data/ from S3
+make frontend-pull ARGS="--delete"          # also delete files no longer in S3
 ```
 
 A flat layout (no subdirectories) is the convention here because Sveltia's
@@ -197,7 +198,7 @@ are pre-existing and looked up via data sources.
   S3, invalidates CloudFront. Uses OIDC to assume an AWS role; no
   long-lived credentials in GitHub.
 - **Lambdas + infrastructure** — deployed locally by the admin via
-  `yarn backend:deploy` and `yarn infra:apply`. Not in CI by design;
+  `make backend-deploy` and `make infra-apply`. Not in CI by design;
   the editor never triggers infra changes.
 
 ## Reference
