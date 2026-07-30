@@ -13,7 +13,7 @@ locals {
 # Sveltia to api.github.com, enforcing path allowlist and commit-author
 # rewrite. esbuild-bundled with @aws-sdk/* externalized (runtime-provided).
 module "github_gateway" {
-  source = "github.com/Maev4l/terraform-modules//modules/lambda-function?ref=v1.7.1"
+  source = "github.com/Maev4l/terraform-modules//modules/lambda-function?ref=v1.8.1"
 
   function_name = "brigitte-le-roux-website-github-gateway"
   architecture  = "arm64"
@@ -82,7 +82,7 @@ locals {
 }
 
 module "media_manager" {
-  source = "github.com/Maev4l/terraform-modules//modules/lambda-function?ref=v1.7.1"
+  source = "github.com/Maev4l/terraform-modules//modules/lambda-function?ref=v1.8.1"
 
   function_name = "brigitte-le-roux-website-media-manager"
   architecture  = "arm64"
@@ -150,7 +150,7 @@ resource "aws_iam_policy" "media_manager" {
 # `cms_trigger` during Plan 5 once the media-manager became its second
 # consumer (state was moved via `terraform state mv`).
 module "cms_trigger" {
-  source = "github.com/Maev4l/terraform-modules//modules/lambda-trigger-apigw?ref=v1.7.1"
+  source = "github.com/Maev4l/terraform-modules//modules/lambda-trigger-apigw?ref=v1.8.1"
 
   api_name = "brigitte-le-roux-website-cms"
 
