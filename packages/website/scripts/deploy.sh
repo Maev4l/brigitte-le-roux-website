@@ -5,6 +5,11 @@ cd "$(dirname "$0")/.."
 
 BUCKET=$(terraform -chdir=../infrastructure output -raw bucket_name)
 DIST_ID=$(terraform -chdir=../infrastructure output -raw cloudfront_distribution_id)
+# The CMS lives on a second distribution over the same bucket, so a change to
+# public/cms/** is invisible until THAT one is invalidated too. Its default
+# behavior uses CachingOptimized (24h TTL), which is long enough for a stale
+# sign-in page to look like a failed deploy.
+CMS_DIST_ID=$(terraform -chdir=../infrastructure output -raw cloudfront_cms_distribution_id)
 
 echo "==> Building"
 yarn build
@@ -30,10 +35,12 @@ aws s3 sync dist/data/ "s3://$BUCKET/data/" --size-only --delete
 echo "==> Syncing HTML + bundles (force re-upload, no --size-only)"
 aws s3 sync dist/ "s3://$BUCKET/" --delete --exclude "data/*"
 
-echo "==> Invalidating CloudFront /*"
-aws cloudfront create-invalidation \
-  --distribution-id "$DIST_ID" \
-  --paths "/*" \
-  --output text > /dev/null
+for dist in "$DIST_ID" "$CMS_DIST_ID"; do
+  echo "==> Invalidating CloudFront /* on $dist"
+  aws cloudfront create-invalidation \
+    --distribution-id "$dist" \
+    --paths "/*" \
+    --output text > /dev/null
+done
 
 echo "==> Done: https://$(terraform -chdir=../infrastructure output -raw cloudfront_domain)/"

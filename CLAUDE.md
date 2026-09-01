@@ -315,6 +315,22 @@ site: **commit and push to `main`**, let the `deploy-website` GHA
 workflow rebuild and sync. Or run `make frontend-deploy` locally for
 the equivalent flow without a commit.
 
+**Two distributions serve this bucket, and both must be invalidated.**
+`brigitte-le-roux.com` (site) and `cms.brigitte-le-roux.com` (cms) are
+separate distributions over the same S3 bucket, and `/cms/*` objects are
+served only by the cms one. Its default behavior uses AWS-managed
+CachingOptimized (24h TTL), so invalidating only the site distribution
+leaves the CMS serving a day-old copy while the deploy reports success —
+which looks exactly like a build that didn't ship. Both
+`deploy-website.yml` and `scripts/deploy.sh` now invalidate both.
+
+**Relative asset paths break on the auth popup.** Sveltia opens it at
+`/cms/auth` with no trailing slash; `cloudfront-cms-function.js` serves
+`/cms/auth/index.html` for that URI but the browser's address keeps the
+extensionless shape, so `./foo.js` resolves to `/cms/foo.js`. Missing keys
+return **403**, not 404, because the bucket policy grants `GetObject`
+without `ListBucket`. Always use root-absolute paths under `/cms/`.
+
 Do **NOT** surgically upload uncommitted state with `aws s3 cp` to
 `s3://.../cms/*`. The GHA workflow runs `aws s3 sync dist/ --delete`
 on every push to `main`, including pushes that don't touch CMS files;

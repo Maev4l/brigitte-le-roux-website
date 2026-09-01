@@ -24,6 +24,12 @@ env:
   AWS_REGION: eu-central-1
   S3_BUCKET: brigitte-le-roux-website
   CF_DISTRIBUTION_ID: E36ANPC8D6F1WW
+  # The CMS is a SECOND distribution over the same bucket. Both must be
+  # invalidated: a deploy that touches public/cms/** changes objects served
+  # only by this one, and its default behavior uses AWS-managed
+  # CachingOptimized (24h TTL), so skipping it serves stale CMS pages for a
+  # day while the site distribution looks correctly updated.
+  CF_CMS_DISTRIBUTION_ID: E2JGF2FEM8KWCZ
   DEPLOY_ROLE_ARN: arn:aws:iam::671123374425:role/gha-website-deploy
 
 jobs:
@@ -63,12 +69,15 @@ jobs:
           aws s3 sync packages/website/dist/ "s3://${S3_BUCKET}/" --delete \
             --exclude "pdfs/*" --exclude "data/*" --exclude "img/*"
 
-      - name: Invalidate CloudFront
+      - name: Invalidate CloudFront (site + cms)
         run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "${CF_DISTRIBUTION_ID}" \
-            --paths "/*" \
-            --output text > /dev/null
+          for dist in "${CF_DISTRIBUTION_ID}" "${CF_CMS_DISTRIBUTION_ID}"; do
+            echo "==> invalidating $dist"
+            aws cloudfront create-invalidation \
+              --distribution-id "$dist" \
+              --paths "/*" \
+              --output text > /dev/null
+          done
 
       # On push-triggered failure, leave a commit comment pointing at the
       # Actions logs. Useful when the deploy fails silently (the site stays
