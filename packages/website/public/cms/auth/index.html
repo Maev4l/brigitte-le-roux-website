@@ -136,6 +136,10 @@
        Same-origin on purpose: this page reads the editor's password, so no
        third-party CDN belongs in it. Amplify v6 also ships no browser-global
        build, so the v5 script-tag pattern has no direct successor. -->
-  <script type="module" src="./auth.js"></script>
+  <!-- Root-absolute, NOT "./auth.js". Sveltia opens this popup at /cms/auth
+       with no trailing slash, so a relative path resolves to /cms/auth.js and
+       S3 answers 403 (OAC grants GetObject only, so a missing key is 403, not
+       404). An absolute path works for both /cms/auth and /cms/auth/. -->
+  <script type="module" src="/cms/auth/auth.js"></script>
 </body>
 </html>

@@ -43,7 +43,18 @@ test('the bundle pulls no script from a third-party CDN', () => {
 
 test('the page loads only its own same-origin bundle', () => {
   const html = readFileSync(htmlPath, 'utf8');
-  assert.match(html, /<script\s+type="module"\s+src="\.\/auth\.js"><\/script>/);
+  // Root-absolute, never relative. Sveltia opens this popup at /cms/auth with
+  // NO trailing slash; cloudfront-cms-function.js serves /cms/auth/index.html
+  // for it but the browser's URL keeps that shape, so "./auth.js" resolves to
+  // /cms/auth.js — a key that doesn't exist, which S3 behind OAC answers with
+  // 403 (the bucket policy grants GetObject only, no ListBucket). An absolute
+  // path is correct for both /cms/auth and /cms/auth/.
+  assert.match(html, /<script\s+type="module"\s+src="\/cms\/auth\/auth\.js"><\/script>/);
+  assert.doesNotMatch(
+    html,
+    /src="\.\/auth\.js"/,
+    'relative bundle path 403s when the popup URL has no trailing slash',
+  );
   for (const host of FORBIDDEN_HOSTS) {
     assert.ok(!html.includes(host), `index.html references ${host}`);
   }
