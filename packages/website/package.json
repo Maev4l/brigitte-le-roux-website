@@ -4,16 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --port 4321",
-    "build": "astro build",
+    "build:cms-auth": "node scripts/build-cms-auth.mjs",
+    "dev": "yarn build:cms-auth && astro dev --port 4321",
+    "build": "yarn build:cms-auth && astro build",
     "preview": "astro preview --port 4321",
     "pull": "bash scripts/pull-public.sh",
     "deploy": "bash scripts/deploy.sh",
     "check:links": "bash scripts/check-links.sh",
-    "test:schema": "node --test src/lib/schema.test.mjs"
+    "test:schema": "node --test src/lib/schema.test.mjs",
+    "test:cms-auth": "yarn build:cms-auth && node --test src/cms-auth/bundle.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.2",
-    "astro": "5.18.1"
+    "astro": "5.18.1",
+    "aws-amplify": "6.20.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }

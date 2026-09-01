@@ -20,7 +20,23 @@
     // manual-init so Plan 9 can inject runtime credentials into the config.
     window.CMS_MANUAL_INIT = true;
   </script>
-  <script src="https://unpkg.com/@sveltia/cms@0.163.0/dist/sveltia-cms.js"></script>
+  <!-- Sveltia itself is third-party and loaded from unpkg, so it is pinned by
+       SRI as well as by version: a tampered or swapped bundle fails to execute
+       rather than running with access to the editor's session. The hash is of
+       the npm artefact (verified identical from unpkg and jsDelivr), so it must
+       be recomputed on every version bump:
+         curl -sL https://unpkg.com/@sveltia/cms@<version>/dist/sveltia-cms.js \
+           | openssl dgst -sha384 -binary | openssl base64 -A
+       crossorigin="anonymous" is required for SRI on a cross-origin script;
+       unpkg serves Access-Control-Allow-Origin: *.
+       Scope limit: this pins the entry bundle only. Sveltia fetches further
+       resources from unpkg at runtime (prismjs, its own package.json for
+       update checks), which SRI cannot cover. -->
+  <script
+    src="https://unpkg.com/@sveltia/cms@0.163.0/dist/sveltia-cms.js"
+    integrity="sha384-GtKHyvktf6FqnS4uxtS25fMTLG+f5tnwmIQUNx/hrc38hRhLijyakWmUVONi9+YF"
+    crossorigin="anonymous"
+  ></script>
   <script>
     // Load /cms/config.yml ourselves, hand the parsed object to CMS.init.
     // (Sveltia ships with a YAML parser internally; we use fetch + the

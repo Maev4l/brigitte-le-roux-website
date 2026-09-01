@@ -1,22 +1,41 @@
 <!doctype html>
-<html lang="en">
+<!-- lang="fr": the editor is French and the CMS itself is configured in French
+     (config.yml labels, the site's default locale). Only this sign-in step was
+     ever in English. -->
+<html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>CMS sign-in</title>
+  <title>Connexion CMS</title>
   <style>
+    /* Values copied from src/styles/theme.css rather than imported: Astro
+       emits that stylesheet to /_astro/*.css, and cloudfront-cms-function.js
+       404s anything outside /cms/ and /api/, so this standalone page cannot
+       link it. Keep the copies in sync with theme.css by hand — an earlier
+       drift here left the kicker at #c8553d, which fails WCAG AA on white
+       (4.35:1); the real brand vermillion #b22222 clears it at 6.68:1. */
     :root {
-      --bg: #f5efe6;
-      --fg: #1a1a1a;
-      --kicker: #c8553d;
+      --bg: #f3ede1;
+      --fg: #1a1612;
+      --text-muted: #4a4138;
+      --kicker: #b22222;
+      --on-kicker: #fff;
       --field-bg: #fff;
-      --field-border: #ddd;
+      --field-border: #c8bfad;
       --error: #b04a3a;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0;
-      padding: 1.5rem;
+      /* viewport-fit=cover lets the page paint under a notch, so each edge
+         takes the larger of the base inset and the device's safe area. This
+         popup opens full-screen on iOS Safari, where the top inset is ~47px
+         against a 24px base padding. */
+      padding:
+        max(1.5rem, env(safe-area-inset-top))
+        max(1.5rem, env(safe-area-inset-right))
+        max(1.5rem, env(safe-area-inset-bottom))
+        max(1.5rem, env(safe-area-inset-left));
       background: var(--bg);
       color: var(--fg);
       min-height: 100vh;
@@ -31,7 +50,11 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
     h1 {
-      font-size: 1.1rem;
+      /* 1.75rem over the 0.8rem floor gives a ~2.2:1 overall type range, which
+         is the spread the design detector measures (per-step ratios alone don't
+         satisfy it). Kept uppercase + letter-spaced to stay in the site's
+         editorial kicker idiom rather than reading as a generic heading. */
+      font-size: 1.75rem;
       margin: 0 0 1.5rem;
       color: var(--kicker);
       text-transform: uppercase;
@@ -39,12 +62,18 @@
     }
     label {
       display: block;
-      font-size: 0.85rem;
+      /* One small tier at 0.8rem, a 1.25 step below the 1rem form controls;
+         .error and .hint share it deliberately. Three sizes total (1.4 / 1 /
+         0.8) rather than four bunched ones. Don't shrink the controls below
+         1rem — iOS zooms the viewport on focus for anything smaller. */
+      font-size: 0.8rem;
       margin: 1rem 0 0.25rem;
     }
     input {
       width: 100%;
-      padding: 0.6rem 0.75rem;
+      /* 0.8rem block padding puts the control at ~47px tall, clearing the 44px
+         minimum touch target (WCAG 2.5.8) for thumb use on a phone. */
+      padding: 0.8rem 0.75rem;
       border: 1px solid var(--field-border);
       border-radius: 4px;
       font-size: 1rem;
@@ -53,11 +82,11 @@
     button {
       width: 100%;
       margin-top: 1.5rem;
-      padding: 0.7rem;
+      padding: 0.85rem; /* ~48px tall — see the touch-target note on input. */
       border: none;
       border-radius: 4px;
       background: var(--kicker);
-      color: #fff;
+      color: var(--on-kicker);
       font-size: 1rem;
       cursor: pointer;
     }
@@ -65,15 +94,24 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+    /* Keyboard users need a ring the custom field borders don't swallow. --fg
+       reads against both the white card and the vermillion button, so one rule
+       covers every control (WCAG 2.4.7). :focus-visible keeps it off mouse
+       clicks. */
+    input:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--fg);
+      outline-offset: 2px;
+    }
     .error {
       color: var(--error);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       margin-top: 1rem;
       min-height: 1.2em;
     }
     .hint {
-      font-size: 0.75rem;
-      color: #666;
+      font-size: 0.8rem;
+      color: var(--text-muted);
       margin-top: 1rem;
       text-align: center;
     }
@@ -81,159 +119,23 @@
 </head>
 <body>
   <div class="card">
-    <h1>CMS sign-in</h1>
+    <h1>Connexion CMS</h1>
     <form id="login-form">
-      <label for="email">Email</label>
+      <label for="email">Adresse e-mail</label>
       <input id="email" name="email" type="email" autocomplete="username" required autofocus />
-      <label for="password">Password</label>
+      <label for="password">Mot de passe</label>
       <input id="password" name="password" type="password" autocomplete="current-password" required />
-      <button id="submit" type="submit">Sign in</button>
+      <button id="submit" type="submit">Se connecter</button>
       <p id="error" class="error" role="alert"></p>
     </form>
-    <p class="hint">Closes automatically after sign-in.</p>
+    <p class="hint">Cette fenêtre se ferme automatiquement après la connexion.</p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
-  <script>
-    // ---- Configuration (public values; no secrets) -----------------------
-    var USER_POOL_ID = 'eu-central-1_d777fmVps';
-    var APP_CLIENT_ID = '5hk4h6m90mih8j055929bk1adc';
-    var REGION = 'eu-central-1';
-
-    // ---- Read the OAuth params Sveltia opened us with --------------------
-    var params = new URLSearchParams(window.location.search);
-    var provider = params.get('provider') || 'github';
-
-    var form = document.getElementById('login-form');
-    var submit = document.getElementById('submit');
-    var errorBox = document.getElementById('error');
-
-    function postToOpener(message) {
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage(message, '*');
-      }
-    }
-
-    function postAuthorizationSuccess(idToken) {
-      var payload = JSON.stringify({ provider: provider, token: idToken });
-      postToOpener('authorization:' + provider + ':success:' + payload);
-    }
-
-    function postAuthorizationError(message, code) {
-      var payload = JSON.stringify({ provider: provider, error: message, errorCode: code || 'AUTH_ERROR' });
-      postToOpener('authorization:' + provider + ':error:' + payload);
-    }
-
-    function authenticate(email, password) {
-      return new Promise(function (resolve, reject) {
-        var pool = new AmazonCognitoIdentity.CognitoUserPool({
-          UserPoolId: USER_POOL_ID,
-          ClientId: APP_CLIENT_ID,
-        });
-        var user = new AmazonCognitoIdentity.CognitoUser({
-          Username: email,
-          Pool: pool,
-        });
-        var authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
-          Username: email,
-          Password: password,
-        });
-        user.authenticateUser(authDetails, {
-          onSuccess: function (session) {
-            resolve(session.getIdToken().getJwtToken());
-          },
-          onFailure: function (err) {
-            reject(err);
-          },
-          newPasswordRequired: function () {
-            reject(new Error('Initial password change required — sign in via the AWS console once, then retry here.'));
-          },
-        });
-      });
-    }
-
-    // Plan 9: after Cognito SRP succeeds we have an id_token in hand.
-    // Use it to fetch the dedicated S3-uploader IAM user's access key
-    // + secret from /api/media/s3-credentials, then stash the secret
-    // into Sveltia's preferences-storage key (sveltia-cms.prefs.apiKeys.aws_s3).
-    // Sveltia reads this synchronously when the editor opens an asset
-    // browser — by the time the shim's postMessage completes and the
-    // popup closes, Sveltia's auth state is ready AND its S3 secret is
-    // pre-populated. Editor never enters credentials.
-    //
-    // Failure is non-fatal: media uploads will surface the missing-secret
-    // error in Sveltia's UI on first attempt; auth still succeeds.
-    async function fetchAndStashS3Credentials(idToken) {
-      try {
-        var response = await fetch('/api/media/s3-credentials', {
-          headers: { 'Authorization': 'Bearer ' + idToken },
-        });
-        if (!response.ok) {
-          console.warn('media-manager /s3-credentials returned', response.status);
-          return;
-        }
-        var creds = await response.json();
-        if (!creds || typeof creds.secret_access_key !== 'string') {
-          console.warn('media-manager response missing secret_access_key');
-          return;
-        }
-        var rawPrefs = localStorage.getItem('sveltia-cms.prefs');
-        var prefs = {};
-        if (rawPrefs) {
-          try { prefs = JSON.parse(rawPrefs); } catch (_) { prefs = {}; }
-        }
-        prefs.apiKeys = prefs.apiKeys || {};
-        prefs.apiKeys.aws_s3 = creds.secret_access_key;
-        localStorage.setItem('sveltia-cms.prefs', JSON.stringify(prefs));
-      } catch (err) {
-        console.warn('failed to stash S3 credentials', err && err.message);
-      }
-    }
-
-    postToOpener('authorizing:' + provider);
-
-    var sveltiaReady = false;
-    window.addEventListener('message', function (e) {
-      if (typeof e.data === 'string' && e.data === 'authorizing:' + provider) {
-        sveltiaReady = true;
-      }
-    });
-
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      errorBox.textContent = '';
-      submit.disabled = true;
-      submit.textContent = 'Signing in…';
-
-      try {
-        var email = document.getElementById('email').value.trim();
-        var password = document.getElementById('password').value;
-        var idToken = await authenticate(email, password);
-
-        var deadline = Date.now() + 2000;
-        while (!sveltiaReady && Date.now() < deadline) {
-          await new Promise(function (r) { setTimeout(r, 50); });
-        }
-
-        // Plan 9: fetch + stash S3 creds so Sveltia's media library
-        // has the secret ready immediately after the popup closes.
-        await fetchAndStashS3Credentials(idToken);
-
-        postAuthorizationSuccess(idToken);
-
-        try {
-          localStorage.setItem('cms.cognito_id_token', idToken);
-        } catch (_) { /* ignore quota errors */ }
-
-        setTimeout(function () { window.close(); }, 200);
-      } catch (err) {
-        var message = (err && err.message) ? err.message : 'Sign-in failed';
-        errorBox.textContent = message;
-        postAuthorizationError(message, (err && err.code) ? err.code : 'AUTH_ERROR');
-        submit.disabled = false;
-        submit.textContent = 'Sign in';
-      }
-    });
-  </script>
+  <!-- Sign-in logic lives in src/cms-auth/main.js and is bundled to ./auth.js
+       by scripts/build-cms-auth.mjs (wired into `yarn dev` and `yarn build`).
+       Same-origin on purpose: this page reads the editor's password, so no
+       third-party CDN belongs in it. Amplify v6 also ships no browser-global
+       build, so the v5 script-tag pattern has no direct successor. -->
+  <script type="module" src="./auth.js"></script>
 </body>
 </html>

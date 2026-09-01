@@ -36,6 +36,13 @@ packages/website/public/*
 !packages/website/public/cms/
 !packages/website/public/cms/**
 
+# ...with one exception: the sign-in shim's JS bundle is GENERATED (esbuild,
+# from packages/website/src/cms-auth/main.js) and is rebuilt by both `yarn dev`
+# and `yarn build`, so the source of truth is the src/ file, not this artefact.
+# The empty-public/cms hazard noted above doesn't apply to it precisely because
+# every build regenerates it before Astro copies public/ into dist/.
+packages/website/public/cms/auth/auth.js
+
 # OS
 .DS_Store
 Thumbs.db

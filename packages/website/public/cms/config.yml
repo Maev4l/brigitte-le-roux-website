@@ -2,7 +2,9 @@
 #
 # Editor flow:
 #   1. Open https://cms.brigitte-le-roux.com/cms/.
-#   2. Sign in via Cognito (popup at /cms/auth/index.html — our OAuth shim).
+#   2. Sign in via Cognito (popup at /cms/auth/index.html — our OAuth shim;
+#      its JS is bundled from packages/website/src/cms-auth/main.js and served
+#      same-origin at /cms/auth/auth.js).
 #   3. The id_token is used as a GitHub OAuth token by Sveltia; api_root
 #      below points at our github-gateway Lambda which proxies to
 #      api.github.com via a GitHub App installation.

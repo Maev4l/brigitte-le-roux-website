@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Cognito User Pool for the CMS editor (Brigitte).
 # Authentication entry point. Sveltia (Plan 6) renders its own login form
-# and calls Cognito directly via amazon-cognito-identity-js using
+# and calls Cognito directly via the AWS Amplify JS v6 auth client using
 # USER_SRP_AUTH — no Hosted UI, no OAuth redirect. The editor stays on
 # cms.brigitte-le-roux.com end-to-end.
 # ---------------------------------------------------------------------------
@@ -94,10 +94,15 @@ resource "aws_cognito_user_pool_client" "cms" {
   # or incorrect password" instead of differentiating).
   prevent_user_existence_errors = "ENABLED"
 
-  # Auth flows enabled: ALLOW_USER_SRP_AUTH (Sveltia's in-app login uses
-  # the SRP cryptographic exchange via amazon-cognito-identity-js) and
+  # Auth flows enabled: ALLOW_USER_SRP_AUTH (Sveltia's in-app login uses the
+  # SRP cryptographic exchange; Amplify v6's signIn defaults to this flow) and
   # ALLOW_REFRESH_TOKEN_AUTH (refresh flow used silently when the access
   # token expires).
+  #
+  # Deliberately NOT enabled: ALLOW_USER_PASSWORD_AUTH. It would let the shim
+  # skip SRP and post the editor's password in the request body; AWS documents
+  # SRP as the more secure flow. Keeping it off also means an accidental
+  # client-side downgrade fails closed at Cognito rather than shipping.
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
