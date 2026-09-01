@@ -6,11 +6,6 @@ output "cloudfront_distribution_id" {
   value = aws_cloudfront_distribution.site.id
 }
 
-output "cloudfront_cms_distribution_id" {
-  value       = aws_cloudfront_distribution.cms.id
-  description = "CMS distribution. Must be invalidated alongside the site distribution on any public/cms/** change — it serves those objects from the same bucket under CachingOptimized (24h TTL)."
-}
-
 output "cloudfront_domain" {
   value = aws_cloudfront_distribution.site.domain_name
 }

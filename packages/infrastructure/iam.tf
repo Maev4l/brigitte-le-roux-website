@@ -64,9 +64,15 @@ data "aws_iam_policy_document" "gha_website_deploy" {
     resources = ["${aws_s3_bucket.site.arn}/*"]
   }
   statement {
-    effect    = "Allow"
-    actions   = ["cloudfront:CreateInvalidation"]
-    resources = [aws_cloudfront_distribution.site.arn]
+    effect  = "Allow"
+    actions = ["cloudfront:CreateInvalidation"]
+    # Both distributions serve this bucket, and /cms/* objects are served only
+    # by the cms one. The deploy invalidates both, so the role needs both ARNs
+    # — scoped to these two distributions rather than "*".
+    resources = [
+      aws_cloudfront_distribution.site.arn,
+      aws_cloudfront_distribution.cms.arn,
+    ]
   }
 }
 

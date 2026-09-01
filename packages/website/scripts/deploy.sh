@@ -9,7 +9,7 @@ DIST_ID=$(terraform -chdir=../infrastructure output -raw cloudfront_distribution
 # public/cms/** is invisible until THAT one is invalidated too. Its default
 # behavior uses CachingOptimized (24h TTL), which is long enough for a stale
 # sign-in page to look like a failed deploy.
-CMS_DIST_ID=$(terraform -chdir=../infrastructure output -raw cloudfront_cms_distribution_id)
+CMS_DIST_ID=$(terraform -chdir=../infrastructure output -raw cms_distribution_id)
 
 echo "==> Building"
 yarn build
